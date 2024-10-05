@@ -150,7 +150,6 @@ export default function SearchScreen() {
                         <Image
                             source={require('../../assets/images/burger-marker-svgrepo-com.png')}
                             style={{ width: 50, height: 50 }} // Вказуємо потрібний розмір іконки
-                            resizeMode="contain" // Для підтримки пропорцій зображення
                         />
                     </Marker>
                 ))}
