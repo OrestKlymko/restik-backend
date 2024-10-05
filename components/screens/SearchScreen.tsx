@@ -1,15 +1,49 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import MapView, { MapPressEvent, Marker, Region } from 'react-native-maps';
-import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image } from 'react-native';
+import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image, ScrollView } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
-import { RestaurantLocation } from '../types/types.ts';
+import { Restaurant, RestaurantLocation } from '../types/types.ts';
 import FilterComponent from '../components/Filter.tsx';
 import Ionicons from "react-native-vector-icons/Ionicons";
+import RestaurantCard from "../components/RestaurantCard.tsx";
 
 const restaurants: RestaurantLocation[] = [
     { id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating'] },
     { id: 2, name: 'Restaurant 2', latitude: 37.78845, longitude: -122.4358, features: ['Parking'] },
     { id: 3, name: 'Restaurant 3', latitude: 37.78925, longitude: -122.4314, features: ['WiFi', 'Parking', 'Outdoor Seating'] },
+];
+
+const restaurantsInBottomSheet: Restaurant[] = [
+    {
+        id: 1,
+        name: 'La Piazza',
+        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
+        rating: 4.5,
+        cuisineType: 'Italian',
+        distanceFromUser: 1.2,
+        averagePrice: 25,
+        features: ['WiFi', 'Outdoor Seating', 'Parking'],
+    },
+    {
+        id: 2,
+        name: 'Sushi World',
+        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
+        rating: 4.7,
+        cuisineType: 'Japanese',
+        distanceFromUser: 3.5,
+        averagePrice: 40,
+        features: ['Parking', 'Family Friendly'],
+    },
+    {
+        id: 3,
+        name: 'Burger Heaven',
+        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
+        rating: 4.3,
+        cuisineType: 'American',
+        distanceFromUser: 0.8,
+        averagePrice: 15,
+        features: ['WiFi', 'Pet Friendly'],
+    },
 ];
 
 export default function SearchScreen() {
@@ -20,6 +54,7 @@ export default function SearchScreen() {
     const [chosenRestaurant, setChosenRestaurant] = useState<RestaurantLocation | null>(null);
     const [suggestionsVisible, setSuggestionsVisible] = useState(true);
     const [showSearchBar, setShowSearchBar] = useState(true);
+    const [isScrollEnabled, setScrollEnabled] = useState(true);
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const mapRef = useRef<MapView | null>(null);
@@ -35,7 +70,6 @@ export default function SearchScreen() {
         }).start(() => setShowSearchBar(false));
     };
 
-    // Анімація появи
     const fadeIn = () => {
         setShowSearchBar(true);
         Animated.timing(opacity, {
@@ -45,7 +79,6 @@ export default function SearchScreen() {
         }).start();
     };
 
-    // Переміщення до обраного ресторану після вибору
     useEffect(() => {
         if (chosenRestaurant) {
             const region: Region = {
@@ -86,9 +119,30 @@ export default function SearchScreen() {
         </TouchableOpacity>
     );
 
+    const handleScroll = (event) => {
+        const { y } = event.nativeEvent.contentOffset;
+        if (y <= 0) {
+            setScrollEnabled(false);
+        } else {
+            setScrollEnabled(true);
+        }
+    };
+
+    const handleBottomSheetChange = (index: number) => {
+        // Відновлюємо можливість скролу, коли BottomSheet відкривається
+        if (index === 0) {
+            setScrollEnabled(true);
+        }
+
+        if (index === 1) {
+            fadeOut();
+        } else {
+            fadeIn();
+        }
+    };
+
     return (
         <View style={styles.container}>
-            {/* Пошуковий бар зверху */}
             {showSearchBar && (
                 <Animated.View style={[styles.searchContainer, { opacity }]}>
                     <TextInput
@@ -120,7 +174,6 @@ export default function SearchScreen() {
                 </Animated.View>
             )}
 
-            {/* Карта з маркерами ресторанів */}
             <MapView
                 ref={mapRef}
                 style={styles.map}
@@ -149,23 +202,17 @@ export default function SearchScreen() {
                     >
                         <Image
                             source={require('../../assets/images/burger-marker-svgrepo-com.png')}
-                            style={{ width: 50, height: 50 }} // Вказуємо потрібний розмір іконки
+                            style={{ width: 50, height: 50 }}
                         />
                     </Marker>
                 ))}
             </MapView>
-
             <BottomSheet
                 ref={bottomSheetRef}
                 snapPoints={snapPoints}
                 index={0}
-                onChange={(index) => {
-                    if (index === 1) {
-                        fadeOut();
-                    } else {
-                        fadeIn();
-                    }
-                }}
+                onChange={handleBottomSheetChange}  // Викликаємо обробник зміни стану
+                enablePanDownToClose={false} // Не закриваємо повністю, коли свайпаємо вниз
                 style={styles.bottomSheet}
             >
                 {isFilterVisible ? (
@@ -174,12 +221,18 @@ export default function SearchScreen() {
                         selectedFilters={selectedFilters}
                         toggleFilter={toggleFilter}
                     />
+                ) : chosenRestaurant ? (
+                    <View style={styles.bottomSheetContent}>
+                        <Text style={styles.restaurantName}>{chosenRestaurant.name}</Text>
+                    </View>
                 ) : (
-                    chosenRestaurant && (
-                        <View style={styles.bottomSheetContent}>
-                            <Text style={styles.restaurantName}>{chosenRestaurant.name}</Text>
-                        </View>
-                    )
+                    <ScrollView
+                        onScroll={handleScroll}
+                        scrollEnabled={isScrollEnabled}
+                        scrollEventThrottle={16}
+                    >
+                        {restaurantsInBottomSheet.map((restaurant) => <RestaurantCard restaurant={restaurant} key={restaurant.id} />)}
+                    </ScrollView>
                 )}
             </BottomSheet>
         </View>
@@ -254,6 +307,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     bottomSheet: {
-        zIndex: 2, // Велике значення для перекриття
+        paddingTop: 16,
+        zIndex: 2,
     },
 });

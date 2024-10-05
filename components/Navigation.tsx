@@ -16,7 +16,7 @@ const Navigation = () => {
                 screenOptions={({route}) => ({
                     tabBarIcon: ({focused, color, size}) => {
                         let iconName;
-
+                        color = focused ? 'black' : '#996E4D';
                         switch (route.name) {
                             case 'Search':
                                 iconName = focused ? 'search' : 'search';
@@ -39,8 +39,8 @@ const Navigation = () => {
 
                         return <Ionicons name={iconName} size={size} color={color}/>;
                     },
-                    tabBarActiveTintColor: 'tomato',
-                    tabBarInactiveTintColor: 'gray',
+                    tabBarActiveTintColor: 'black',
+                    tabBarInactiveTintColor: '#996E4D',
                     tabBarStyle: {
                         position: 'absolute',
                         bottom: 0,
