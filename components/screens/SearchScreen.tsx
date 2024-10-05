@@ -12,7 +12,6 @@ const restaurants: RestaurantLocation[] = [
 ];
 
 export default function SearchScreen() {
-    const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantLocation | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
     const [visibleRestaurants, setVisibleRestaurants] = useState<RestaurantLocation[]>(restaurants);
@@ -28,7 +27,6 @@ export default function SearchScreen() {
     // Переміщення до обраного ресторану після вибору
     useEffect(() => {
         if (chosenRestaurant) {
-            setSelectedRestaurant(chosenRestaurant);
             const region: Region = {
                 latitude: chosenRestaurant.latitude,
                 longitude: chosenRestaurant.longitude,
@@ -63,7 +61,7 @@ export default function SearchScreen() {
             onPress={() => {
                 setSearchQuery(item.name);
                 setSuggestionsVisible(false);
-                setChosenRestaurant(item); // Оновлюємо обраний ресторан
+                setChosenRestaurant(item);
             }}
         >
             <Text style={styles.suggestionText}>{item.name}</Text>
@@ -108,8 +106,8 @@ export default function SearchScreen() {
                 }}
                 onPress={(event: MapPressEvent) => {
                     if (event.nativeEvent.action !== 'marker-press') {
-                        setSelectedRestaurant(null);
-                        bottomSheetRef.current?.close();
+                        setChosenRestaurant(null);
+                        setFilterVisible(false);
                     }
                 }}
             >
@@ -118,7 +116,10 @@ export default function SearchScreen() {
                         key={restaurant.id}
                         coordinate={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
                         title={restaurant.name}
-                        onPress={() => setSelectedRestaurant(restaurant)}
+                        onPress={() => {
+                            setFilterVisible(false);
+                            setChosenRestaurant(restaurant)
+                        }}
                     />
                 ))}
             </MapView>
@@ -136,9 +137,9 @@ export default function SearchScreen() {
                         toggleFilter={toggleFilter}
                     />
                 ) : (
-                    selectedRestaurant && (
+                    chosenRestaurant && (
                         <View style={styles.bottomSheetContent}>
-                            <Text style={styles.restaurantName}>{selectedRestaurant.name}</Text>
+                            <Text style={styles.restaurantName}>{chosenRestaurant.name}</Text>
                         </View>
                     )
                 )}
