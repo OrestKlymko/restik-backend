@@ -43,10 +43,10 @@ const Navigation = () => {
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        height: 60, // Явно вказуємо висоту навігаційної панелі
-                        backgroundColor: 'white', // Упевнимось, що панель має фон
+                        height: 60, // Висота панелі
+                        backgroundColor: 'white', // Колір панелі
                     },
-                    headerShown: false,
+                    headerShown: false, // Приховуємо заголовок
                 })}
             >
                 <Tab.Screen name="Search" component={SearchScreen} />

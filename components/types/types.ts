@@ -3,4 +3,5 @@ export type RestaurantLocation = {
     longitude: number;
     name: string;
     id: number;
+    features: string[];
 };

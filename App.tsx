@@ -1,5 +1,5 @@
 import React from 'react';
-import { useColorScheme } from 'react-native';
+import { SafeAreaView, useColorScheme, StyleSheet } from 'react-native';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Navigation from './components/Navigation';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,10 +12,21 @@ function App(): React.JSX.Element {
     };
 
     return (
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: backgroundStyle.backgroundColor }}>
-            <Navigation />
-        </GestureHandlerRootView>
+        <SafeAreaView style={styles.safeArea}>
+            <GestureHandlerRootView style={[styles.gestureHandler, { backgroundColor: backgroundStyle.backgroundColor }]}>
+                <Navigation />
+            </GestureHandlerRootView>
+        </SafeAreaView>
     );
 }
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
+    gestureHandler: {
+        flex: 1,
+    },
+});
 
 export default App;
