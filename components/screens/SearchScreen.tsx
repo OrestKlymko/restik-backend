@@ -145,12 +145,15 @@ export default function SearchScreen() {
         <View style={styles.container}>
             {showSearchBar && (
                 <Animated.View style={[styles.searchContainer, { opacity }]}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search for a restaurant"
-                        value={searchQuery}
-                        onChangeText={handleSearchChange}
-                    />
+                    <View style={styles.searchInputContainer}>
+                        <Ionicons name="search" size={20} color="gray" style={styles.searchIcon} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search for a restaurant"
+                            value={searchQuery}
+                            onChangeText={handleSearchChange}
+                        />
+                    </View>
                     {suggestionsVisible && searchQuery.length > 0 && (
                         <FlatList
                             data={visibleRestaurants.filter(restaurant =>
@@ -159,11 +162,13 @@ export default function SearchScreen() {
                             renderItem={renderSuggestion}
                             keyExtractor={(item) => item.id.toString()}
                             style={styles.suggestionsList}
+                            ItemSeparatorComponent={() => <View style={styles.separator} />}
                             keyboardShouldPersistTaps="handled"
                         />
                     )}
                 </Animated.View>
             )}
+
             {showSearchBar && (
                 <Animated.View style={[styles.filterButton, { opacity }]}>
                     <TouchableOpacity onPress={() => setFilterVisible(true)}>
@@ -248,35 +253,52 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         position: 'absolute',
-        top: 20,
+        top: 17,
         left: 20,
         right: 20,
         zIndex: 1,
         backgroundColor: 'white',
         borderRadius: 19,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.2,
         shadowRadius: 5,
         width: '75%',
     },
-    searchInput: {
+    searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
         borderRadius: 19,
         padding: 10,
+    },
+    searchIcon: {
+        marginRight: 5,
+    },
+    searchInput: {
         fontSize: 16,
-        backgroundColor: 'white',
+        flex: 1,
     },
     suggestionsList: {
-        marginTop: 10,
-        maxHeight: 150,
+        marginTop: 5,
+        borderBottomLeftRadius: 19, // Заокруглення з усіх боків
+        borderBottomRightRadius: 19, // Заокруглення з усіх боків
+        backgroundColor: 'white', // Фон списку
         borderWidth: 1,
-        borderRadius: 8,
+        borderColor: '#ddd', // Легка сіра рамка
     },
     suggestionItem: {
-        padding: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
     },
     suggestionText: {
         fontSize: 16,
+        color: '#333',
+    },
+    separator: {
+        height: 1,
+        backgroundColor: '#ddd',
+        marginVertical: 5,
     },
     filterButton: {
         width: 40,
