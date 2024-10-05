@@ -1,9 +1,9 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import MapView, { MapPressEvent, Marker, Region } from 'react-native-maps';
-import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
-import { RestaurantLocation } from "../types/types.ts";
-import FilterComponent from "../components/Filter.tsx";
+import { RestaurantLocation } from '../types/types.ts';
+import FilterComponent from '../components/Filter.tsx';
 
 const restaurants: RestaurantLocation[] = [
     { id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating'] },
@@ -18,11 +18,32 @@ export default function SearchScreen() {
     const [isFilterVisible, setFilterVisible] = useState(false);
     const [chosenRestaurant, setChosenRestaurant] = useState<RestaurantLocation | null>(null);
     const [suggestionsVisible, setSuggestionsVisible] = useState(true);
+    const [showSearchBar, setShowSearchBar] = useState(true); // Контроль видимості пошукового бару та фільтра
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const mapRef = useRef<MapView | null>(null); // Додаємо реф для MapView
+    const opacity = useRef(new Animated.Value(1)).current; // Додаємо анімацію для opacity
 
-    const snapPoints = useMemo(() => ['25%', '100%', '100%'], []); // Шторка трохи відкрита
+    const snapPoints = useMemo(() => ['25%', '100%'], []); // Шторка трохи відкрита і повністю відкрита
+
+    // Анімація зникання
+    const fadeOut = () => {
+        Animated.timing(opacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => setShowSearchBar(false)); // Ховаємо бар після анімації
+    };
+
+    // Анімація появи
+    const fadeIn = () => {
+        setShowSearchBar(true);
+        Animated.timing(opacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+    };
 
     // Переміщення до обраного ресторану після вибору
     useEffect(() => {
@@ -71,28 +92,34 @@ export default function SearchScreen() {
     return (
         <View style={styles.container}>
             {/* Пошуковий бар зверху */}
-            <View style={styles.searchContainer}>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search for a restaurant"
-                    value={searchQuery}
-                    onChangeText={handleSearchChange}
-                />
-                {suggestionsVisible && searchQuery.length > 0 && (
-                    <FlatList
-                        data={visibleRestaurants.filter(restaurant =>
-                            restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())
-                        )}
-                        renderItem={renderSuggestion}
-                        keyExtractor={(item) => item.id.toString()}
-                        style={styles.suggestionsList}
-                        keyboardShouldPersistTaps="handled"
+            {showSearchBar && (
+                <Animated.View style={[styles.searchContainer, { opacity }]}>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search for a restaurant"
+                        value={searchQuery}
+                        onChangeText={handleSearchChange}
                     />
-                )}
-            </View>
-            <TouchableOpacity style={styles.filterButton} onPress={() => setFilterVisible(true)}>
-                <Text style={styles.filterButtonText}>F</Text>
-            </TouchableOpacity>
+                    {suggestionsVisible && searchQuery.length > 0 && (
+                        <FlatList
+                            data={visibleRestaurants.filter(restaurant =>
+                                restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())
+                            )}
+                            renderItem={renderSuggestion}
+                            keyExtractor={(item) => item.id.toString()}
+                            style={styles.suggestionsList}
+                            keyboardShouldPersistTaps="handled"
+                        />
+                    )}
+                </Animated.View>
+            )}
+            {showSearchBar && (
+                <Animated.View style={[styles.filterButton, { opacity }]}>
+                    <TouchableOpacity onPress={() => setFilterVisible(true)}>
+                        <Text style={styles.filterButtonText}>F</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
 
             {/* Карта з маркерами ресторанів */}
             <MapView
@@ -118,7 +145,7 @@ export default function SearchScreen() {
                         title={restaurant.name}
                         onPress={() => {
                             setFilterVisible(false);
-                            setChosenRestaurant(restaurant)
+                            setChosenRestaurant(restaurant);
                         }}
                     />
                 ))}
@@ -129,6 +156,14 @@ export default function SearchScreen() {
                 ref={bottomSheetRef}
                 snapPoints={snapPoints}
                 index={0} // Шторка трохи відкрита
+                onChange={(index) => {
+                    if (index === 1) {
+                        fadeOut(); // Анімація зникання при повному відкритті шторки
+                    } else {
+                        fadeIn(); // Анімація появи при частковому закритті шторки
+                    }
+                }}
+                style={styles.bottomSheet} // Додаємо стиль для великого zIndex
             >
                 {isFilterVisible ? (
                     <FilterComponent
@@ -168,7 +203,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         width: '75%',
-        elevation: 5,
     },
     searchInput: {
         borderRadius: 8,
@@ -215,5 +249,8 @@ const styles = StyleSheet.create({
     restaurantName: {
         fontSize: 20,
         fontWeight: 'bold',
+    },
+    bottomSheet: {
+        zIndex: 2, // Велике значення для перекриття
     },
 });
