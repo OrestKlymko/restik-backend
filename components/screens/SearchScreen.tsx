@@ -22,7 +22,7 @@ export default function SearchScreen() {
     const bottomSheetRef = useRef<BottomSheet>(null);
     const mapRef = useRef<MapView | null>(null); // Додаємо реф для MapView
 
-    const snapPoints = useMemo(() => ['25%', '50%', '90%'], []); // Шторка трохи відкрита
+    const snapPoints = useMemo(() => ['25%', '100%', '100%'], []); // Шторка трохи відкрита
 
     // Переміщення до обраного ресторану після вибору
     useEffect(() => {
@@ -167,11 +167,10 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 5,
+        width: '75%',
         elevation: 5,
     },
     searchInput: {
-        borderColor: 'gray',
-        borderWidth: 1,
         borderRadius: 8,
         padding: 10,
         fontSize: 16,
