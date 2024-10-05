@@ -1,6 +1,6 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {NavigationContainer} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import AuthScreen from './screens/AuthScreen';
@@ -13,28 +13,31 @@ const Navigation = () => {
         <NavigationContainer>
             <Tab.Navigator
                 initialRouteName="Search"
-                screenOptions={({ route }) => ({
-                    tabBarIcon: ({ focused, color, size }) => {
+                screenOptions={({route}) => ({
+                    tabBarIcon: ({focused, color, size}) => {
                         let iconName;
 
                         switch (route.name) {
                             case 'Search':
-                                iconName = focused ? 'accessibility-sharp' : 'add';
+                                iconName = focused ? 'search' : 'search';
                                 break;
                             case 'Favorites':
-                                iconName = focused ? 'accessibility-sharp' : 'add';
+                                iconName = focused ? 'star' : 'star';
                                 break;
                             case 'Happy Hours':
-                                iconName = focused ? 'accessibility-sharp' : 'add';
+                                iconName = focused ? 'happy' : 'happy';
                                 break;
                             case 'Profile':
-                                iconName = focused ? 'accessibility-sharp' : 'add';
+                                iconName = focused ? 'person' : 'person';
+                                break;
+                            case 'Last Chance':
+                                iconName = focused ? 'hourglass' : 'hourglass';
                                 break;
                             default:
                                 iconName = 'accessibility-sharp';
                         }
 
-                        return <Ionicons name={iconName} size={size} color={color} />;
+                        return <Ionicons name={iconName} size={size} color={color}/>;
                     },
                     tabBarActiveTintColor: 'tomato',
                     tabBarInactiveTintColor: 'gray',
@@ -49,10 +52,11 @@ const Navigation = () => {
                     headerShown: false, // Приховуємо заголовок
                 })}
             >
-                <Tab.Screen name="Search" component={SearchScreen} />
-                <Tab.Screen name="Favorites" component={AuthScreen} />
-                <Tab.Screen name="Happy Hours" component={AuthScreen} />
-                <Tab.Screen name="Profile" component={AuthScreen} />
+                <Tab.Screen name="Search" component={SearchScreen}/>
+                <Tab.Screen name="Favorites" component={AuthScreen}/>
+                <Tab.Screen name="Happy Hours" component={AuthScreen}/>
+                <Tab.Screen name="Last chance" component={AuthScreen}/>
+                <Tab.Screen name="Profile" component={AuthScreen}/>
             </Tab.Navigator>
         </NavigationContainer>
     );

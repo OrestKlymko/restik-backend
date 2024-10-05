@@ -1,9 +1,10 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import MapView, { MapPressEvent, Marker, Region } from 'react-native-maps';
-import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { RestaurantLocation } from '../types/types.ts';
 import FilterComponent from '../components/Filter.tsx';
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 const restaurants: RestaurantLocation[] = [
     { id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating'] },
@@ -18,21 +19,20 @@ export default function SearchScreen() {
     const [isFilterVisible, setFilterVisible] = useState(false);
     const [chosenRestaurant, setChosenRestaurant] = useState<RestaurantLocation | null>(null);
     const [suggestionsVisible, setSuggestionsVisible] = useState(true);
-    const [showSearchBar, setShowSearchBar] = useState(true); // Контроль видимості пошукового бару та фільтра
+    const [showSearchBar, setShowSearchBar] = useState(true);
 
     const bottomSheetRef = useRef<BottomSheet>(null);
-    const mapRef = useRef<MapView | null>(null); // Додаємо реф для MapView
-    const opacity = useRef(new Animated.Value(1)).current; // Додаємо анімацію для opacity
+    const mapRef = useRef<MapView | null>(null);
+    const opacity = useRef(new Animated.Value(0.5)).current;
 
-    const snapPoints = useMemo(() => ['25%', '100%'], []); // Шторка трохи відкрита і повністю відкрита
+    const snapPoints = useMemo(() => ['25%', '100%'], []);
 
-    // Анімація зникання
     const fadeOut = () => {
         Animated.timing(opacity, {
             toValue: 0,
             duration: 300,
             useNativeDriver: true,
-        }).start(() => setShowSearchBar(false)); // Ховаємо бар після анімації
+        }).start(() => setShowSearchBar(false));
     };
 
     // Анімація появи
@@ -51,15 +51,12 @@ export default function SearchScreen() {
             const region: Region = {
                 latitude: chosenRestaurant.latitude,
                 longitude: chosenRestaurant.longitude,
-                latitudeDelta: 0.01, // Збільшили для кращого фокусу
+                latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
             };
 
-            // Плавне переміщення карти
             mapRef.current?.animateToRegion(region, 1000);
-
-            // Робимо шторку привідкритою
-            bottomSheetRef.current?.snapToIndex(0); // Встановлюємо привідкритий стан (15%)
+            bottomSheetRef.current?.snapToIndex(0);
         }
     }, [chosenRestaurant]);
 
@@ -116,14 +113,16 @@ export default function SearchScreen() {
             {showSearchBar && (
                 <Animated.View style={[styles.filterButton, { opacity }]}>
                     <TouchableOpacity onPress={() => setFilterVisible(true)}>
-                        <Text style={styles.filterButtonText}>F</Text>
+                        <Text style={styles.filterButtonText}>
+                            <Ionicons name="filter" size={22}/>
+                        </Text>
                     </TouchableOpacity>
                 </Animated.View>
             )}
 
             {/* Карта з маркерами ресторанів */}
             <MapView
-                ref={mapRef} // Прив'язуємо реф до MapView
+                ref={mapRef}
                 style={styles.map}
                 initialRegion={{
                     latitude: 37.78825,
@@ -147,23 +146,28 @@ export default function SearchScreen() {
                             setFilterVisible(false);
                             setChosenRestaurant(restaurant);
                         }}
-                    />
+                    >
+                        <Image
+                            source={require('../../assets/images/burger-marker-svgrepo-com.png')}
+                            style={{ width: 50, height: 50 }} // Вказуємо потрібний розмір іконки
+                            resizeMode="contain" // Для підтримки пропорцій зображення
+                        />
+                    </Marker>
                 ))}
             </MapView>
 
-            {/* BottomSheet для фільтрів або деталей ресторанів */}
             <BottomSheet
                 ref={bottomSheetRef}
                 snapPoints={snapPoints}
-                index={0} // Шторка трохи відкрита
+                index={0}
                 onChange={(index) => {
                     if (index === 1) {
-                        fadeOut(); // Анімація зникання при повному відкритті шторки
+                        fadeOut();
                     } else {
-                        fadeIn(); // Анімація появи при частковому закритті шторки
+                        fadeIn();
                     }
                 }}
-                style={styles.bottomSheet} // Додаємо стиль для великого zIndex
+                style={styles.bottomSheet}
             >
                 {isFilterVisible ? (
                     <FilterComponent
@@ -192,12 +196,12 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         position: 'absolute',
-        top: 40,
+        top: 20,
         left: 20,
         right: 20,
         zIndex: 1,
         backgroundColor: 'white',
-        borderRadius: 12,
+        borderRadius: 19,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
@@ -205,7 +209,7 @@ const styles = StyleSheet.create({
         width: '75%',
     },
     searchInput: {
-        borderRadius: 8,
+        borderRadius: 19,
         padding: 10,
         fontSize: 16,
         backgroundColor: 'white',
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         position: 'absolute',
-        top: 40,
+        top: 20,
         right: 20,
         zIndex: 1,
         shadowColor: '#000',
