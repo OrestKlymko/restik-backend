@@ -1,16 +1,23 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import MapView, { MapPressEvent, Marker, Region } from 'react-native-maps';
-import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image, ScrollView } from 'react-native';
+import React, {useState, useRef, useMemo, useEffect} from 'react';
+import MapView, {MapPressEvent, Marker, Region} from 'react-native-maps';
+import {View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image, ScrollView} from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
-import { Restaurant, RestaurantLocation } from '../types/types.ts';
+import {Restaurant, RestaurantLocation} from '../types/types.ts';
 import FilterComponent from '../components/Filter.tsx';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import RestaurantCard from "../components/RestaurantCard.tsx";
+import {RestaurantFinal} from "../components/final/RestaurantFinal.tsx";
 
 const restaurants: RestaurantLocation[] = [
-    { id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating'] },
-    { id: 2, name: 'Restaurant 2', latitude: 37.78845, longitude: -122.4358, features: ['Parking'] },
-    { id: 3, name: 'Restaurant 3', latitude: 37.78925, longitude: -122.4314, features: ['WiFi', 'Parking', 'Outdoor Seating'] },
+    {id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating']},
+    {id: 2, name: 'Restaurant 2', latitude: 37.78845, longitude: -122.4358, features: ['Parking']},
+    {
+        id: 3,
+        name: 'Restaurant 3',
+        latitude: 37.78925,
+        longitude: -122.4314,
+        features: ['WiFi', 'Parking', 'Outdoor Seating']
+    },
 ];
 
 const restaurantsInBottomSheet: Restaurant[] = [
@@ -55,12 +62,20 @@ export default function SearchScreen() {
     const [suggestionsVisible, setSuggestionsVisible] = useState(true);
     const [showSearchBar, setShowSearchBar] = useState(true);
     const [isScrollEnabled, setScrollEnabled] = useState(true);
+    const [sheetIndex, setSheetIndex] = useState(0); // Для зберігання поточного індексу
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const mapRef = useRef<MapView | null>(null);
     const opacity = useRef(new Animated.Value(0.5)).current;
 
-    const snapPoints = useMemo(() => ['25%', '100%'], []);
+    // Оновлюємо snapPoints, щоб додати 50%
+    const snapPoints = useMemo(() => ['25%', '70%', '100%'], []);
+
+    useEffect(() => {
+        if ((chosenRestaurant || isFilterVisible) && sheetIndex === 2) {
+            setShowSearchBar(false);
+        }
+    }, [isFilterVisible, chosenRestaurant, sheetIndex]);
 
     const fadeOut = () => {
         Animated.timing(opacity, {
@@ -89,24 +104,33 @@ export default function SearchScreen() {
             };
 
             mapRef.current?.animateToRegion(region, 1000);
-            bottomSheetRef.current?.snapToIndex(0);
+            bottomSheetRef.current?.snapToIndex(1); // Відкриваємо на 50% (індекс 1)
         }
     }, [chosenRestaurant]);
 
+
     const toggleFilter = (filter: string) => {
-        if (selectedFilters.includes(filter)) {
-            setSelectedFilters(selectedFilters.filter(f => f !== filter));
-        } else {
-            setSelectedFilters([...selectedFilters, filter]);
-        }
+        setSelectedFilters(prev =>
+            prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter]
+        );
     };
+
+    const applyFilters = () => {
+        // Логіка для застосування фільтрів
+        console.log('Застосовані фільтри:', selectedFilters);
+    };
+
+    const clearFilters = () => {
+        setSelectedFilters([]);
+    };
+
 
     const handleSearchChange = (text: string) => {
         setSearchQuery(text);
         setSuggestionsVisible(text !== '');
     };
 
-    const renderSuggestion = ({ item }: { item: RestaurantLocation }) => (
+    const renderSuggestion = ({item}: { item: RestaurantLocation }) => (
         <TouchableOpacity
             style={styles.suggestionItem}
             onPress={() => {
@@ -119,17 +143,18 @@ export default function SearchScreen() {
         </TouchableOpacity>
     );
 
-    const handleScroll = (event) => {
-        const { y } = event.nativeEvent.contentOffset;
-        if (y <= 0) {
-            setScrollEnabled(false);
-        } else {
-            setScrollEnabled(true);
-        }
-    };
+    // const handleScroll = (event) => {
+    //     const {y} = event.nativeEvent.contentOffset;
+    //     if (y <= 0) {
+    //         setScrollEnabled(false);
+    //     } else {
+    //         setScrollEnabled(true);
+    //     }
+    // };
 
     const handleBottomSheetChange = (index: number) => {
         // Відновлюємо можливість скролу, коли BottomSheet відкривається
+        setSheetIndex(index);
         if (index === 0) {
             setScrollEnabled(true);
         }
@@ -144,9 +169,9 @@ export default function SearchScreen() {
     return (
         <View style={styles.container}>
             {showSearchBar && (
-                <Animated.View style={[styles.searchContainer, { opacity }]}>
+                <Animated.View style={[styles.searchContainer, {opacity}]}>
                     <View style={styles.searchInputContainer}>
-                        <Ionicons name="search" size={20} color="gray" style={styles.searchIcon} />
+                        <Ionicons name="search" size={20} color="gray" style={styles.searchIcon}/>
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search for a restaurant"
@@ -162,7 +187,7 @@ export default function SearchScreen() {
                             renderItem={renderSuggestion}
                             keyExtractor={(item) => item.id.toString()}
                             style={styles.suggestionsList}
-                            ItemSeparatorComponent={() => <View style={styles.separator} />}
+                            ItemSeparatorComponent={() => <View style={styles.separator}/>}
                             keyboardShouldPersistTaps="handled"
                         />
                     )}
@@ -170,7 +195,7 @@ export default function SearchScreen() {
             )}
 
             {showSearchBar && (
-                <Animated.View style={[styles.filterButton, { opacity }]}>
+                <Animated.View style={[styles.filterButton, {opacity}]}>
                     <TouchableOpacity onPress={() => setFilterVisible(true)}>
                         <Text style={styles.filterButtonText}>
                             <Ionicons name="filter" size={22}/>
@@ -192,22 +217,24 @@ export default function SearchScreen() {
                     if (event.nativeEvent.action !== 'marker-press') {
                         setChosenRestaurant(null);
                         setFilterVisible(false);
+                        bottomSheetRef.current?.snapToIndex(0);
                     }
                 }}
             >
                 {visibleRestaurants.map((restaurant) => (
                     <Marker
                         key={restaurant.id}
-                        coordinate={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
+                        coordinate={{latitude: restaurant.latitude, longitude: restaurant.longitude}}
                         title={restaurant.name}
                         onPress={() => {
                             setFilterVisible(false);
                             setChosenRestaurant(restaurant);
+                            bottomSheetRef.current?.snapToIndex(1);
                         }}
                     >
                         <Image
                             source={require('../../assets/images/burger-marker-svgrepo-com.png')}
-                            style={{ width: 50, height: 50 }}
+                            style={{width: 50, height: 50}}
                         />
                     </Marker>
                 ))}
@@ -222,21 +249,26 @@ export default function SearchScreen() {
             >
                 {isFilterVisible ? (
                     <FilterComponent
-                        availableFilters={['WiFi', 'Parking', 'Outdoor Seating']}
                         selectedFilters={selectedFilters}
                         toggleFilter={toggleFilter}
+                        applyFilters={applyFilters}
+                        clearFilters={clearFilters}
                     />
                 ) : chosenRestaurant ? (
-                    <View style={styles.bottomSheetContent}>
-                        <Text style={styles.restaurantName}>{chosenRestaurant.name}</Text>
-                    </View>
+                    <ScrollView
+                        style={styles.listOfSrollViewOnAdvert}
+                    >
+                       <RestaurantFinal />
+                    </ScrollView>
                 ) : (
                     <ScrollView
-                        onScroll={handleScroll}
-                        scrollEnabled={isScrollEnabled}
+                        style={styles.listOfSrollView}
+                        // onScroll={handleScroll}
+                        // scrollEnabled={isScrollEnabled}
                         scrollEventThrottle={16}
                     >
-                        {restaurantsInBottomSheet.map((restaurant) => <RestaurantCard restaurant={restaurant} key={restaurant.id} />)}
+                        {restaurantsInBottomSheet.map((restaurant) => <RestaurantCard restaurant={restaurant}
+                                                                                      key={restaurant.id}/>)}
                     </ScrollView>
                 )}
             </BottomSheet>
@@ -260,7 +292,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 19,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 5 },
+        shadowOffset: {width: 0, height: 5},
         shadowOpacity: 0.2,
         shadowRadius: 5,
         width: '75%',
@@ -312,7 +344,7 @@ const styles = StyleSheet.create({
         right: 20,
         zIndex: 1,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.3,
         shadowRadius: 5,
         elevation: 5,
@@ -321,15 +353,16 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 18,
     },
-    bottomSheetContent: {
-        padding: 16,
-    },
-    restaurantName: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
     bottomSheet: {
-        paddingTop: 16,
+        paddingTop: 10,
         zIndex: 2,
     },
+
+    listOfSrollView: {
+        paddingTop: 35,
+    },
+
+    listOfSrollViewOnAdvert: {
+        paddingTop: 15,
+    }
 });

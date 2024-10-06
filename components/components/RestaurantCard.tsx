@@ -3,10 +3,13 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { Restaurant } from '../types/types.ts';
 
 interface RestaurantCardProps {
-    restaurant: Restaurant;
+    restaurant: Restaurant|undefined;
 }
 
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
+    if(restaurant === undefined) {
+        return <Text>Restaurant not find</Text>;
+    }
     return (
         <View style={styles.card}>
             <Image source={{ uri: restaurant.imageUrl }} style={styles.image} />

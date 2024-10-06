@@ -18,19 +18,19 @@ const Navigation = () => {
                         let iconName;
                         color = focused ? 'black' : '#996E4D';
                         switch (route.name) {
-                            case 'Search':
+                            case 'Пошук':
                                 iconName = focused ? 'search' : 'search';
                                 break;
-                            case 'Favorites':
+                            case 'Улюблене':
                                 iconName = focused ? 'star' : 'star';
                                 break;
-                            case 'Happy Hours':
+                            case 'Щасливі години':
                                 iconName = focused ? 'happy' : 'happy';
                                 break;
-                            case 'Profile':
+                            case 'Профіль':
                                 iconName = focused ? 'person' : 'person';
                                 break;
-                            case 'Last Chance':
+                            case 'Останній шанс':
                                 iconName = focused ? 'hourglass' : 'hourglass';
                                 break;
                             default:
@@ -58,11 +58,11 @@ const Navigation = () => {
                     headerShown: false, // Приховуємо заголовок
                 })}
             >
-                <Tab.Screen name="Search" component={SearchScreen}/>
-                <Tab.Screen name="Favorites" component={AuthScreen}/>
-                <Tab.Screen name="Happy Hours" component={AuthScreen}/>
-                <Tab.Screen name="Last chance" component={AuthScreen}/>
-                <Tab.Screen name="Profile" component={AuthScreen}/>
+                <Tab.Screen name="Пошук" component={SearchScreen}/>
+                <Tab.Screen name="Улюблене" component={AuthScreen}/>
+                <Tab.Screen name="Щасливі години" component={AuthScreen}/>
+                <Tab.Screen name="Останній шанс" component={AuthScreen}/>
+                <Tab.Screen name="Профіль" component={AuthScreen}/>
             </Tab.Navigator>
         </NavigationContainer>
     );
