@@ -16,14 +16,14 @@ const FilterComponent: React.FC<FilterComponentProps> = ({
                                                          }) => {
     const filters: Record<string, string[]> = {
         'Відчинено зараз': ['Відчинено зараз'],
-        'Тип закладу': ['Кафе', 'Ресторан', 'Бар', 'Паб', 'Кав\'ярня', 'Фастфуд'],
+        'Тип закладу': ['Кафе', 'Ресторан', 'Бар', 'Паб', 'Кав\'ярня', 'Фастфуд', 'Кафе-кондитерська'],
         'Кухня': ['Азійська', 'Українська', 'Китайська', 'Італійська', 'Мексиканська', 'Французька', 'Індійська'],
         'Спеціально для тебе': [
             'Є кальян',
             'Можна курити',
             'Можна з тваринами',
             'З терасою',
-            'Є Wi-Fi',
+            'Дитячий куточок',
         ],
         'Атмосфера': [
             'Жива музика',
@@ -32,11 +32,10 @@ const FilterComponent: React.FC<FilterComponentProps> = ({
             'Для компанії',
             'Для побачення',
         ],
-        // Можете додати інші секції тут
     };
 
     return (
-        <ScrollView style={styles.filterContainer}>
+        <View style={styles.filterContainer}>
             {Object.keys(filters).map(section => (
                 <View key={section} style={styles.sectionContainer}>
                     <Text style={styles.sectionTitle}>{section}</Text>
@@ -71,7 +70,7 @@ const FilterComponent: React.FC<FilterComponentProps> = ({
                     <Text style={styles.buttonText}>Очистити</Text>
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+        </View>
     );
 };
 

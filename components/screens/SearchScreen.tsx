@@ -1,7 +1,7 @@
 import React, {useState, useRef, useMemo, useEffect} from 'react';
 import MapView, {MapPressEvent, Marker, Region} from 'react-native-maps';
 import {View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image, ScrollView} from 'react-native';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import {Restaurant, RestaurantLocation} from '../types/types.ts';
 import FilterComponent from '../components/Filter.tsx';
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -124,6 +124,11 @@ export default function SearchScreen() {
         setSelectedFilters([]);
     };
 
+    const handleScrollBeginDrag = () => {
+        if (sheetIndex < 1) {
+            bottomSheetRef.current?.expand();
+        }
+    };
 
     const handleSearchChange = (text: string) => {
         setSearchQuery(text);
@@ -143,17 +148,8 @@ export default function SearchScreen() {
         </TouchableOpacity>
     );
 
-    // const handleScroll = (event) => {
-    //     const {y} = event.nativeEvent.contentOffset;
-    //     if (y <= 0) {
-    //         setScrollEnabled(false);
-    //     } else {
-    //         setScrollEnabled(true);
-    //     }
-    // };
 
     const handleBottomSheetChange = (index: number) => {
-        // Відновлюємо можливість скролу, коли BottomSheet відкривається
         setSheetIndex(index);
         if (index === 0) {
             setScrollEnabled(true);
@@ -243,33 +239,37 @@ export default function SearchScreen() {
                 ref={bottomSheetRef}
                 snapPoints={snapPoints}
                 index={0}
-                onChange={handleBottomSheetChange}  // Викликаємо обробник зміни стану
-                enablePanDownToClose={false} // Не закриваємо повністю, коли свайпаємо вниз
+                onChange={handleBottomSheetChange}
+                enablePanDownToClose={false}
                 style={styles.bottomSheet}
             >
                 {isFilterVisible ? (
+                    <BottomSheetScrollView
+                        style={styles.listOfSrollViewOnAdvert}
+                        keyboardShouldPersistTaps="handled"
+                    >
                     <FilterComponent
                         selectedFilters={selectedFilters}
                         toggleFilter={toggleFilter}
                         applyFilters={applyFilters}
                         clearFilters={clearFilters}
                     />
+                    </BottomSheetScrollView>
                 ) : chosenRestaurant ? (
-                    <ScrollView
+                    <BottomSheetScrollView
                         style={styles.listOfSrollViewOnAdvert}
+                        keyboardShouldPersistTaps="handled"
                     >
-                       <RestaurantFinal />
-                    </ScrollView>
+                        <RestaurantFinal />
+                    </BottomSheetScrollView>
                 ) : (
-                    <ScrollView
+                    <BottomSheetScrollView
                         style={styles.listOfSrollView}
-                        // onScroll={handleScroll}
-                        // scrollEnabled={isScrollEnabled}
-                        scrollEventThrottle={16}
+                        keyboardShouldPersistTaps="handled"
                     >
                         {restaurantsInBottomSheet.map((restaurant) => <RestaurantCard restaurant={restaurant}
                                                                                       key={restaurant.id}/>)}
-                    </ScrollView>
+                    </BottomSheetScrollView>
                 )}
             </BottomSheet>
         </View>
