@@ -1630,6 +1630,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@expo/vector-icons@npm:^14.0.4":
+  version: 14.0.4
+  resolution: "@expo/vector-icons@npm:14.0.4"
+  dependencies:
+    prop-types: ^15.8.1
+  checksum: 31bd5d4e4e2f0b0620b7e8b55b0c5691875cf57c5737bd0ccef0017d0e7abee66352f3d66a58997b719bd0720cccf8f5119503c69fe1a30398747306ebefeb6e
+  languageName: node
+  linkType: hard
+
 "@gorhom/bottom-sheet@npm:^4.6.4":
   version: 4.6.4
   resolution: "@gorhom/bottom-sheet@npm:4.6.4"
@@ -6730,6 +6739,7 @@ __metadata:
     "@babel/core": ^7.20.0
     "@babel/preset-env": ^7.20.0
     "@babel/runtime": ^7.20.0
+    "@expo/vector-icons": ^14.0.4
     "@gorhom/bottom-sheet": ^4.6.4
     "@react-native/babel-preset": 0.75.3
     "@react-native/eslint-config": 0.75.3
@@ -6749,10 +6759,12 @@ __metadata:
     react-native: 0.75.3
     react-native-elements: ^3.4.3
     react-native-gesture-handler: ^2.20.0
+    react-native-image-viewing: ^0.2.2
     react-native-maps: ^1.18.0
     react-native-reanimated: ^3.15.4
     react-native-safe-area-context: ^4.11.0
     react-native-screens: ^3.34.0
+    react-native-stars: ^1.2.2
     react-native-vector-icons: ^10.2.0
     react-navigation: ^5.0.0
     react-test-renderer: 18.3.1
@@ -8193,6 +8205,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-image-viewing@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "react-native-image-viewing@npm:0.2.2"
+  peerDependencies:
+    react: ">=16.11.0"
+    react-native: ">=0.61.3"
+  checksum: 17f16958ebc00787453d68ca0a695ee5fd9c59865fc525e192de6f200f4b91caa3af3da5a9908e28c94370ea28382074328f917c5398a27b112dd986985f77a0
+  languageName: node
+  linkType: hard
+
 "react-native-maps@npm:^1.18.0":
   version: 1.18.0
   resolution: "react-native-maps@npm:1.18.0"
@@ -8273,6 +8295,13 @@ __metadata:
   peerDependencies:
     react-native: "*"
   checksum: f8fa7f301d97dae96df029771445648b4778562c982b3d0625ae78cb397b35efd0e2b482b240531dad68fde0d18cc23f5181a3904259c6e1ff155823ac34996d
+  languageName: node
+  linkType: hard
+
+"react-native-stars@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "react-native-stars@npm:1.2.2"
+  checksum: d6476e64797e61d41d496cbd56146cbf9a40247d7328416b91aba93b8bbf8db161a720a5ff55820871632c4dcba98c8110b7f323e43b616f0877821af792e37b
   languageName: node
   linkType: hard
 

@@ -1,8 +1,13 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import FontAwesome5Icon from "react-native-vector-icons/FontAwesome5";
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Linking, Alert, Platform, ScrollView, Image } from 'react-native';
+import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import ImageView from 'react-native-image-viewing'; // Для перегляду фото на весь екран
 
 export const AboutSection = () => {
+    const [isImageViewVisible, setImageViewVisible] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
     const currentTime = new Date();
     const openingTime = new Date();
     const closingTime = new Date();
@@ -16,13 +21,65 @@ export const AboutSection = () => {
 
     const getStatusText = () => {
         if (isOpen) {
-            return `Відкрито до ${closingTime.getHours()}:${closingTime.getMinutes() === 0 ? '00' : closingTime.getMinutes()}`;
+            return `Відчинено до ${closingTime.getHours()}:${closingTime.getMinutes() === 0 ? '00' : closingTime.getMinutes()}`;
         } else {
-            return `Закрито, відкриється о ${openingTime.getHours()}:${openingTime.getMinutes() === 0 ? '00' : openingTime.getMinutes()}`;
+            return `Зачинено, відкриється о ${openingTime.getHours()}:${openingTime.getMinutes() === 0 ? '00' : openingTime.getMinutes()}`;
         }
     };
 
     const features = ['Wi-Fi', 'Парковка', 'Тераса'];
+
+    const photos = [
+        { uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg' },
+        { uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg' },
+        { uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg' },
+        { uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg' },
+        { uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg' },
+    ];
+
+    // Функція для відкриття карти
+    const openMap = () => {
+        const latitude = 50.4501; // Ваші координати
+        const longitude = 30.5234;
+
+        const googleMapsUrl = `comgooglemaps://?daddr=${latitude},${longitude}&directionsmode=driving`; // URL для Google Maps
+        const appleMapsUrl = `maps://?daddr=${latitude},${longitude}&dirflg=d`; // URL для Apple Maps
+
+        if (Platform.OS === 'ios') {
+            Linking.canOpenURL(appleMapsUrl)
+                .then(supported => {
+                    if (supported) {
+                        return Linking.openURL(appleMapsUrl);
+                    } else {
+                        return Linking.openURL(`https://maps.apple.com/?daddr=${latitude},${longitude}`);
+                    }
+                })
+                .catch(err => Alert.alert('Помилка', 'Не вдалося відкрити карти.'));
+        } else {
+            Linking.canOpenURL(googleMapsUrl)
+                .then(supported => {
+                    if (supported) {
+                        return Linking.openURL(googleMapsUrl);
+                    } else {
+                        return Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+                    }
+                })
+                .catch(err => Alert.alert('Помилка', 'Не вдалося відкрити карти.'));
+        }
+    };
+
+    // Функція для дзвінка
+    const makeCall = () => {
+        const phoneNumber = 'tel:+380501234567';
+        Linking.canOpenURL(phoneNumber)
+            .then(supported => {
+                if (supported) {
+                    Linking.openURL(phoneNumber);
+                } else {
+                    Alert.alert('Помилка', 'Не вдалося здійснити дзвінок');
+                }
+            });
+    };
 
     return (
         <View style={styles.sectionContainer}>
@@ -33,6 +90,23 @@ export const AboutSection = () => {
             <Text style={styles.description}>
                 Тут буде опис ресторану. Він може бути довгим або коротким, залежно від інформації, яку ви хочете надати.
             </Text>
+
+            {/* Фотографії закладу */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoContainer}>
+                {photos.map((photo, index) => (
+                    <TouchableOpacity key={index} onPress={() => { setCurrentImageIndex(index); setImageViewVisible(true); }}>
+                        <Image source={{ uri: photo.uri }} style={styles.photo} />
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            {/* Відкриття перегляду фото */}
+            <ImageView
+                images={photos}
+                imageIndex={currentImageIndex}
+                visible={isImageViewVisible}
+                onRequestClose={() => setImageViewVisible(false)}
+            />
 
             {/* Фічі та тип кухні */}
             <View style={styles.featuresContainer}>
@@ -49,26 +123,26 @@ export const AboutSection = () => {
 
             {/* Блок з адресою, годинами роботи та телефоном */}
             <View style={styles.infoContainer}>
-                <View style={styles.infoItem}>
+                <TouchableOpacity onPress={openMap} style={styles.infoItem}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome5Icon name="map-marker" size={24} color="#1C170D" />
+                        <Ionicons name="map" size={24} color="#1C170D" />
                     </View>
                     <Text style={styles.infoText}>вул. Київська, 10</Text>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.infoItem}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome5Icon name="clock" size={24} color="#1C170D" />
+                        <Ionicons name="time" size={24} color="#1C170D" />
                     </View>
                     <Text style={[styles.infoText, !isOpen && styles.closedText]}>{getStatusText()}</Text>
                 </View>
 
-                <View style={styles.infoItem}>
+                <TouchableOpacity onPress={makeCall} style={styles.infoItem}>
                     <View style={styles.iconContainer}>
                         <FontAwesome5Icon name="phone" size={24} color="#1C170D" />
                     </View>
                     <Text style={styles.infoText}>+38 (050) 123-45-67</Text>
-                </View>
+                </TouchableOpacity>
             </View>
 
             {/* Кнопка "Резервувати стіл" */}
@@ -101,6 +175,15 @@ const styles = StyleSheet.create({
         color: '#1C170D',
         marginBottom: 16,
     },
+    photoContainer: {
+        marginBottom: 16,
+    },
+    photo: {
+        width: 160,
+        height: 160,
+        marginRight: 12,
+        borderRadius: 10,
+    },
     featuresContainer: {
         marginBottom: 16,
     },
@@ -116,13 +199,13 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginRight: 8,
         marginBottom: 8,
-        backgroundColor: 'transparent', // Прозорий фон
+        backgroundColor: 'transparent',
     },
     featureText: {
         fontFamily: 'Plus Jakarta Sans',
         fontSize: 16,
         fontWeight: '400',
-        color: '#996E4D', // Золотистий колір тексту
+        color: '#996E4D',
     },
     infoContainer: {
         marginBottom: 16,
@@ -136,7 +219,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 12,
-        backgroundColor: '#F5F0E5', // Фон для іконки
+        backgroundColor: '#F5F0E5',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 10,
@@ -148,7 +231,7 @@ const styles = StyleSheet.create({
         color: '#1C170D',
     },
     closedText: {
-        color: 'red', // Червоний колір для закритого статусу
+        color: 'red',
     },
     reserveButton: {
         width: 358,
@@ -158,7 +241,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         alignSelf: 'center',
-        marginVertical: 16,
+        marginBottom: 76,
     },
     reserveButtonText: {
         fontFamily: 'Plus Jakarta Sans',
