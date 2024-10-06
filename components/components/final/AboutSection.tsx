@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     sectionTitle: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 22,
         fontWeight: '700',
         lineHeight: 28,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     description: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '400',
         lineHeight: 24,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
     },
     featureText: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '400',
         color: '#996E4D',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     menuLink: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '400',
         color: '#A1824A',
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     infoText: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '400',
         color: '#1C170D',
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
         marginBottom: 76,
     },
     reserveButtonText: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '700',
         color: '#fff',

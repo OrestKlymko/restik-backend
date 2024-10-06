@@ -42,7 +42,7 @@ const Navigation = () => {
                     tabBarActiveTintColor: 'black',
                     tabBarInactiveTintColor: '#996E4D',
                     tabBarLabelStyle: {
-                        fontFamily: 'Plus Jakarta Sans',  // Шрифт
+                        fontFamily: 'PlusJakartaSans-Regular',  // Шрифт
                         fontSize: 12,                      // Розмір тексту
                         lineHeight: 18,                    // Висота рядка
                         textAlign: 'center',                 // Вирівнювання

@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
         marginBottom: 4, // Зменшена відстань між рядками
     },
     name: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 18,
         fontWeight: '700',
         lineHeight: 23,
@@ -79,14 +79,14 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     infoText: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '400',
         lineHeight: 24,
         color: '#A1824A',
     },
     distance: {
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
         fontWeight: '400',
         lineHeight: 24,
