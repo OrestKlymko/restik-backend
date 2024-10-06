@@ -9,7 +9,7 @@ import {PlaceholderSection} from "./PlaceholderSection.tsx"; // Для зіро�
 export const RestaurantFinal = () => {
     const [activeTab, setActiveTab] = useState('Про заклад');
 
-    const tabs = ['Про заклад', 'Меню', 'Відгуки', 'Популярна їжа'];
+    const tabs = ['Про заклад', 'Відгуки'];
 
     const renderContent = () => {
         switch (activeTab) {
@@ -17,7 +17,6 @@ export const RestaurantFinal = () => {
                 return <AboutSection />;
             case 'Відгуки':
                 return <ReviewsSection />;
-            // Додайте інші секції або заглушки
             default:
                 return <PlaceholderSection />;
         }

@@ -121,6 +121,10 @@ export const AboutSection = () => {
                 </View>
             </View>
 
+            <View><TouchableOpacity onPress={() => Linking.openURL('http://your-menu-link.com')}>
+                <Text style={styles.menuLink}>Переглянути меню</Text>
+            </TouchableOpacity>
+            </View>
             {/* Блок з адресою, годинами роботи та телефоном */}
             <View style={styles.infoContainer}>
                 <TouchableOpacity onPress={openMap} style={styles.infoItem}>
@@ -210,6 +214,15 @@ const styles = StyleSheet.create({
     infoContainer: {
         marginBottom: 16,
     },
+    menuLink: {
+        fontFamily: 'Plus Jakarta Sans',
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#A1824A',
+        textDecorationLine: 'underline',
+        marginBottom: 16,
+    },
+
     infoItem: {
         flexDirection: 'row',
         alignItems: 'center',
