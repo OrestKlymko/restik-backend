@@ -5,7 +5,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import AuthScreen from './screens/AuthScreen';
 import SearchScreen from './screens/SearchScreen';
-import FavoriteScreen from "./components/FavoriteScreen.tsx";
+import FavoriteScreen from "./screens/FavoriteScreen.tsx";
+import BenefitsScreen from "./screens/BenefitsScreen.tsx";
 
 const Tab = createBottomTabNavigator();
 
@@ -23,21 +24,20 @@ const Navigation = () => {
                                 iconName = focused ? 'search' : 'search';
                                 break;
                             case 'Улюблене':
-                                iconName = focused ? 'star' : 'star';
+                                iconName = focused ? 'star-outline' : 'star-outline';
                                 break;
                             case 'Щасливі години':
                                 iconName = focused ? 'happy' : 'happy';
                                 break;
                             case 'Профіль':
-                                iconName = focused ? 'person' : 'person';
+                                iconName = focused ? 'person-outline' : 'person-outline';
                                 break;
-                            case 'Останній шанс':
-                                iconName = focused ? 'hourglass' : 'hourglass';
+                            case 'Вигоди':
+                                iconName = focused ? 'bulb-outline' : 'bulb-outline';
                                 break;
                             default:
                                 iconName = 'accessibility-sharp';
                         }
-
                         return <Ionicons name={iconName} size={size} color={color}/>;
                     },
                     tabBarActiveTintColor: 'black',
@@ -61,8 +61,7 @@ const Navigation = () => {
             >
                 <Tab.Screen name="Пошук" component={SearchScreen}/>
                 <Tab.Screen name="Улюблене" component={FavoriteScreen}/>
-                <Tab.Screen name="Щасливі години" component={AuthScreen}/>
-                <Tab.Screen name="Останній шанс" component={AuthScreen}/>
+                <Tab.Screen name="Вигоди" component={BenefitsScreen}/>
                 <Tab.Screen name="Профіль" component={AuthScreen}/>
             </Tab.Navigator>
         </NavigationContainer>

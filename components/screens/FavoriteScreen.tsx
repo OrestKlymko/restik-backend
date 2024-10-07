@@ -3,11 +3,10 @@ import {View, Text, FlatList, StyleSheet, Image, TouchableOpacity} from 'react-n
 import MapView, {MapPressEvent, Marker} from 'react-native-maps';
 import BottomSheet, {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import {Swipeable} from 'react-native-gesture-handler';
-import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
-import {Restaurant} from '../types/types';
-import {RestaurantFinal} from "./final/RestaurantFinal.tsx";
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import {Restaurant} from '../types/types.ts';
+import {RestaurantFinal} from '../components/final/RestaurantFinal.tsx';
 
-// Симуляція улюблених закладів
 const favoriteRestaurants: Restaurant[] = [
     {
         id: 1,
@@ -59,7 +58,7 @@ const typeToIcon: Record<string, string> = {
 export default function FavoriteScreen() {
     const [activeTab, setActiveTab] = useState<'List' | 'Map'>('List');
     const [chosenRestaurant, setChosenRestaurant] = useState<Restaurant | null>(null);
-    const [restaurants, setRestaurants] = useState(favoriteRestaurants); // Додаємо стейт для управління списком
+    const [restaurants, setRestaurants] = useState(favoriteRestaurants);
     const bottomSheetRef = useRef<BottomSheet>(null);
     const mapRef = useRef<MapView | null>(null);
     const snapPoints = useMemo(() => ['25%', '50%', '100%'], []);
