@@ -126,6 +126,7 @@ export const ReviewsSection: React.FC = () => {
 const styles = StyleSheet.create({
     sectionContainer: {
         padding: 16,
+        paddingBottom: 100,
     },
     overallRatingContainer: {
         flexDirection: 'row',

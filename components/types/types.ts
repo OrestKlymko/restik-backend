@@ -4,6 +4,7 @@ export type RestaurantLocation = {
     name: string;
     id: number;
     features: string[];
+    type: string;
 };
 
 
@@ -12,6 +13,9 @@ export type Restaurant ={
     name: string;
     imageUrl: string;
     rating: number;
+    type: string;
+    latitude: number;
+    longitude: number;
     cuisineType: string;
     distanceFromUser: number; // у кілометрах
     averagePrice: number; // середня ціна за людину

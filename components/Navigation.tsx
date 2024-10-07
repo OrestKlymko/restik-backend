@@ -5,6 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import AuthScreen from './screens/AuthScreen';
 import SearchScreen from './screens/SearchScreen';
+import FavoriteScreen from "./components/FavoriteScreen.tsx";
 
 const Tab = createBottomTabNavigator();
 
@@ -59,7 +60,7 @@ const Navigation = () => {
                 })}
             >
                 <Tab.Screen name="Пошук" component={SearchScreen}/>
-                <Tab.Screen name="Улюблене" component={AuthScreen}/>
+                <Tab.Screen name="Улюблене" component={FavoriteScreen}/>
                 <Tab.Screen name="Щасливі години" component={AuthScreen}/>
                 <Tab.Screen name="Останній шанс" component={AuthScreen}/>
                 <Tab.Screen name="Профіль" component={AuthScreen}/>

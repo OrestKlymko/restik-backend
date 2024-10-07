@@ -7,16 +7,18 @@ import FilterComponent from '../components/Filter.tsx';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import RestaurantCard from "../components/RestaurantCard.tsx";
 import {RestaurantFinal} from "../components/final/RestaurantFinal.tsx";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 
 const restaurants: RestaurantLocation[] = [
-    {id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating']},
-    {id: 2, name: 'Restaurant 2', latitude: 37.78845, longitude: -122.4358, features: ['Parking']},
+    {id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating'], type: 'Кафе'},
+    {id: 2, name: 'Restaurant 2', latitude: 37.78845, longitude: -122.4358, features: ['Parking'], type: 'Ресторан'},
     {
         id: 3,
         name: 'Restaurant 3',
         latitude: 37.78925,
         longitude: -122.4314,
-        features: ['WiFi', 'Parking', 'Outdoor Seating']
+        features: ['WiFi', 'Parking', 'Outdoor Seating'],
+        type: 'Бар',
     },
 ];
 
@@ -28,6 +30,7 @@ const restaurantsInBottomSheet: Restaurant[] = [
         rating: 4.5,
         cuisineType: 'Italian',
         distanceFromUser: 1.2,
+        type: 'Кафе',
         averagePrice: 25,
         features: ['WiFi', 'Outdoor Seating', 'Parking'],
     },
@@ -38,6 +41,7 @@ const restaurantsInBottomSheet: Restaurant[] = [
         rating: 4.7,
         cuisineType: 'Japanese',
         distanceFromUser: 3.5,
+        type: 'Ресторан',
         averagePrice: 40,
         features: ['Parking', 'Family Friendly'],
     },
@@ -46,12 +50,23 @@ const restaurantsInBottomSheet: Restaurant[] = [
         name: 'Burger Heaven',
         imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
         rating: 4.3,
+        type: 'Бар',
         cuisineType: 'American',
         distanceFromUser: 0.8,
         averagePrice: 15,
         features: ['WiFi', 'Pet Friendly'],
     },
 ];
+const typeToIcon: Record<string, string> = {
+    'Кафе': 'coffee',
+    'Ресторан': 'utensils',
+    'Бар': 'beer',
+    'Паб': 'glass-martini-alt',
+    'Кав\'ярня': 'mug-hot',
+    'Фастфуд': 'hamburger',
+    'Кафе-кондитерська': 'birthday-cake',
+    'Суші бар': 'utensils',
+};
 
 export default function SearchScreen() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -124,11 +139,6 @@ export default function SearchScreen() {
         setSelectedFilters([]);
     };
 
-    const handleScrollBeginDrag = () => {
-        if (sheetIndex < 1) {
-            bottomSheetRef.current?.expand();
-        }
-    };
 
     const handleSearchChange = (text: string) => {
         setSearchQuery(text);
@@ -228,10 +238,8 @@ export default function SearchScreen() {
                             bottomSheetRef.current?.snapToIndex(1);
                         }}
                     >
-                        <Image
-                            source={require('../../assets/images/burger-marker-svgrepo-com.png')}
-                            style={{width: 50, height: 50}}
-                        />
+                        <FontAwesome5 name={typeToIcon[restaurant.type] || 'utensils'} size={30} color="#A1824A" />
+
                     </Marker>
                 ))}
             </MapView>
@@ -248,19 +256,19 @@ export default function SearchScreen() {
                         style={styles.listOfSrollViewOnAdvert}
                         keyboardShouldPersistTaps="handled"
                     >
-                    <FilterComponent
-                        selectedFilters={selectedFilters}
-                        toggleFilter={toggleFilter}
-                        applyFilters={applyFilters}
-                        clearFilters={clearFilters}
-                    />
+                        <FilterComponent
+                            selectedFilters={selectedFilters}
+                            toggleFilter={toggleFilter}
+                            applyFilters={applyFilters}
+                            clearFilters={clearFilters}
+                        />
                     </BottomSheetScrollView>
                 ) : chosenRestaurant ? (
                     <BottomSheetScrollView
                         style={styles.listOfSrollViewOnAdvert}
                         keyboardShouldPersistTaps="handled"
                     >
-                        <RestaurantFinal />
+                        <RestaurantFinal/>
                     </BottomSheetScrollView>
                 ) : (
                     <BottomSheetScrollView
