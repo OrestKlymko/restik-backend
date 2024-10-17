@@ -1,23 +1,36 @@
-export type RestaurantLocation = {
-    latitude: number;
-    longitude: number;
-    name: string;
-    id: number;
-    features: string[];
-    type: string;
-};
-
-
 export type Restaurant ={
     id: number;
     name: string;
     imageUrl: string;
-    rating: number;
     type: string;
     latitude: number;
     longitude: number;
-    cuisineType: string;
     distanceFromUser: number; // у кілометрах
-    averagePrice: number; // середня ціна за людину
     features: string[];
+    cuisineType: string[];
+    addressId: number;
+    rating: number;
+}
+
+export type RestaurantFinalType ={
+    title: string;
+    description: string;
+    photo: string;
+    features: string[];
+    imagesRest: string[];
+    menuLink: string;
+    address: string;
+    phoneNumber: string;
+    openFrom: string;
+    openTo: string;
+}
+
+export type Review ={
+    id: number;
+    user: string;
+    date: string;
+    comment: string;
+    atmosphere: number;
+    food: number;
+    staff: number;
 }

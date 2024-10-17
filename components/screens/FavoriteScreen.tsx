@@ -16,7 +16,6 @@ const favoriteRestaurants: Restaurant[] = [
         cuisineType: 'Italian',
         distanceFromUser: 1.2,
         type: 'Кафе',
-        averagePrice: 25,
         features: ['WiFi', 'Outdoor Seating', 'Parking'],
         latitude: 37.78825,
         longitude: -122.4324,
@@ -29,7 +28,6 @@ const favoriteRestaurants: Restaurant[] = [
         cuisineType: 'Japanese',
         distanceFromUser: 3.5,
         type: 'Ресторан',
-        averagePrice: 40,
         features: ['Parking', 'Family Friendly'],
         latitude: 37.78845,
         longitude: -122.4358,
@@ -42,7 +40,6 @@ const favoriteRestaurants: Restaurant[] = [
         type: 'Бар',
         cuisineType: 'American',
         distanceFromUser: 0.8,
-        averagePrice: 15,
         features: ['WiFi', 'Pet Friendly'],
         latitude: 37.78925,
         longitude: -122.4314,
@@ -145,7 +142,7 @@ export default function FavoriteScreen() {
                 >
                     {restaurants.map((restaurant) => (
                         <Marker
-                            key={restaurant.id}
+                            key={restaurant.addressId}
                             coordinate={{latitude: restaurant.latitude, longitude: restaurant.longitude}}
                             title={restaurant.name}
                             onPress={() => handleMarkerPress(restaurant)}

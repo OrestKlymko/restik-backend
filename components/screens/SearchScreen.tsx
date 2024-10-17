@@ -1,62 +1,28 @@
 import React, {useState, useRef, useMemo, useEffect} from 'react';
 import MapView, {MapPressEvent, Marker, Region} from 'react-native-maps';
-import {View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, Animated, Image, ScrollView} from 'react-native';
+import {
+    View,
+    TextInput,
+    FlatList,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Animated,
+    Modal,
+    Button,
+    PermissionsAndroid,
+    Platform
+} from 'react-native';
+import Geolocation from 'react-native-geolocation-service';
 import BottomSheet, {BottomSheetScrollView} from '@gorhom/bottom-sheet';
-import {Restaurant, RestaurantLocation} from '../types/types.ts';
+import {Restaurant} from '../types/types.ts';
 import FilterComponent from '../components/Filter.tsx';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import RestaurantCard from "../components/RestaurantCard.tsx";
 import {RestaurantFinal} from "../components/final/RestaurantFinal.tsx";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
+import axios from "axios";
 
-const restaurants: RestaurantLocation[] = [
-    {id: 1, name: 'Restaurant 1', latitude: 37.78825, longitude: -122.4324, features: ['WiFi', 'Outdoor Seating'], type: 'Кафе'},
-    {id: 2, name: 'Restaurant 2', latitude: 37.78845, longitude: -122.4358, features: ['Parking'], type: 'Ресторан'},
-    {
-        id: 3,
-        name: 'Restaurant 3',
-        latitude: 37.78925,
-        longitude: -122.4314,
-        features: ['WiFi', 'Parking', 'Outdoor Seating'],
-        type: 'Бар',
-    },
-];
-
-const restaurantsInBottomSheet: Restaurant[] = [
-    {
-        id: 1,
-        name: 'La Piazza',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        rating: 4.5,
-        cuisineType: 'Italian',
-        distanceFromUser: 1.2,
-        type: 'Кафе',
-        averagePrice: 25,
-        features: ['WiFi', 'Outdoor Seating', 'Parking'],
-    },
-    {
-        id: 2,
-        name: 'Sushi World',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        rating: 4.7,
-        cuisineType: 'Japanese',
-        distanceFromUser: 3.5,
-        type: 'Ресторан',
-        averagePrice: 40,
-        features: ['Parking', 'Family Friendly'],
-    },
-    {
-        id: 3,
-        name: 'Burger Heaven',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        rating: 4.3,
-        type: 'Бар',
-        cuisineType: 'American',
-        distanceFromUser: 0.8,
-        averagePrice: 15,
-        features: ['WiFi', 'Pet Friendly'],
-    },
-];
 const typeToIcon: Record<string, string> = {
     'Кафе': 'coffee',
     'Ресторан': 'utensils',
@@ -71,13 +37,13 @@ const typeToIcon: Record<string, string> = {
 export default function SearchScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-    const [visibleRestaurants, setVisibleRestaurants] = useState<RestaurantLocation[]>(restaurants);
+    const [restaurants, setRestaurants] = useState<Restaurant[]>();
+    const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+    const [showModal, setShowModal] = useState(false);
     const [isFilterVisible, setFilterVisible] = useState(false);
-    const [chosenRestaurant, setChosenRestaurant] = useState<RestaurantLocation | null>(null);
+    const [chosenRestaurant, setChosenRestaurant] = useState<Restaurant | null>(null);
     const [suggestionsVisible, setSuggestionsVisible] = useState(true);
     const [showSearchBar, setShowSearchBar] = useState(true);
-    const [isScrollEnabled, setScrollEnabled] = useState(true);
-    const [sheetIndex, setSheetIndex] = useState(0); // Для зберігання поточного індексу
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const mapRef = useRef<MapView | null>(null);
@@ -87,10 +53,68 @@ export default function SearchScreen() {
     const snapPoints = useMemo(() => ['25%', '70%', '100%'], []);
 
     useEffect(() => {
-        if ((chosenRestaurant || isFilterVisible) && sheetIndex === 2) {
-            setShowSearchBar(false);
+        requestLocationPermission();
+    }, []);
+
+    useEffect(() => {
+        if (location) {
+            axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}`).then((response) => {
+                setRestaurants(response.data);
+            });
         }
-    }, [isFilterVisible, chosenRestaurant, sheetIndex]);
+    }, [location]);
+    const requestLocationPermission = async () => {
+        try {
+            if (Platform.OS === 'ios') {
+                const authorization = await Geolocation.requestAuthorization('whenInUse');
+                if (authorization === 'granted') {
+                    getCurrentLocation();
+                } else {
+                    setShowModal(true);
+                }
+            } else {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                    {
+                        title: 'Location Permission',
+                        message: 'We need access to your location to show nearby restaurants.',
+                        buttonNeutral: 'Ask Me Later',
+                        buttonNegative: 'Cancel',
+                        buttonPositive: 'OK',
+                    }
+                );
+
+                if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                    getCurrentLocation();
+                } else {
+                    setShowModal(true);
+                }
+            }
+        } catch (err) {
+            console.warn('Error requesting location permission:', err);
+        }
+    };
+
+
+    const getCurrentLocation = () => {
+        Geolocation.getCurrentPosition(
+            (position) => {
+                const {latitude, longitude} = position.coords;
+                setLocation({latitude, longitude});
+                console.log('User location:', latitude, longitude);
+            },
+            (error) => {
+                console.log('Geolocation error', error);
+                setShowModal(true);
+            },
+            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
+        );
+    };
+
+    const handleCitySelect = (city: { latitude: number, longitude: number }) => {
+        setLocation(city);
+        setShowModal(false);
+    };
 
     const fadeOut = () => {
         Animated.timing(opacity, {
@@ -119,10 +143,9 @@ export default function SearchScreen() {
             };
 
             mapRef.current?.animateToRegion(region, 1000);
-            bottomSheetRef.current?.snapToIndex(1); // Відкриваємо на 50% (індекс 1)
+            bottomSheetRef.current?.snapToIndex(1);
         }
     }, [chosenRestaurant]);
-
 
     const toggleFilter = (filter: string) => {
         setSelectedFilters(prev =>
@@ -131,21 +154,32 @@ export default function SearchScreen() {
     };
 
     const applyFilters = () => {
-        // Логіка для застосування фільтрів
-        console.log('Застосовані фільтри:', selectedFilters);
-    };
-
+        if (location && selectedFilters.length > 0) {
+            axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}&features=${selectedFilters.join(',')}`).then((response) => {
+                setRestaurants(response.data);
+            });
+        } else {
+            axios.get(`http://localhost:8089/address/coordinates?features=${selectedFilters.join(',')}`).then((response) => {
+                setRestaurants(response.data);
+            });
+        }
+        setFilterVisible(false);
+    }
     const clearFilters = () => {
         setSelectedFilters([]);
+        if (location) {
+            axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}`).then((response) => {
+                setRestaurants(response.data);
+            });
+        }
     };
-
 
     const handleSearchChange = (text: string) => {
         setSearchQuery(text);
         setSuggestionsVisible(text !== '');
     };
 
-    const renderSuggestion = ({item}: { item: RestaurantLocation }) => (
+    const renderSuggestion = ({item}: { item: Restaurant }) => (
         <TouchableOpacity
             style={styles.suggestionItem}
             onPress={() => {
@@ -158,19 +192,14 @@ export default function SearchScreen() {
         </TouchableOpacity>
     );
 
-
     const handleBottomSheetChange = (index: number) => {
-        setSheetIndex(index);
-        if (index === 0) {
-            setScrollEnabled(true);
-        }
-
-        if (index === 1) {
+        if (index === 2 && (chosenRestaurant || isFilterVisible)) {
             fadeOut();
         } else {
             fadeIn();
         }
     };
+
 
     return (
         <View style={styles.container}>
@@ -180,14 +209,14 @@ export default function SearchScreen() {
                         <Ionicons name="search" size={20} color="gray" style={styles.searchIcon}/>
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search for a restaurant"
+                            placeholder="Назва закладу"
                             value={searchQuery}
                             onChangeText={handleSearchChange}
                         />
                     </View>
-                    {suggestionsVisible && searchQuery.length > 0 && (
+                    {suggestionsVisible && searchQuery.length > 0 && restaurants && (
                         <FlatList
-                            data={visibleRestaurants.filter(restaurant =>
+                            data={restaurants.filter(restaurant =>
                                 restaurant.name.toLowerCase().includes(searchQuery.toLowerCase())
                             )}
                             renderItem={renderSuggestion}
@@ -202,7 +231,11 @@ export default function SearchScreen() {
 
             {showSearchBar && (
                 <Animated.View style={[styles.filterButton, {opacity}]}>
-                    <TouchableOpacity onPress={() => setFilterVisible(true)}>
+                    <TouchableOpacity onPress={() => {
+                        setFilterVisible(true);
+                        setSearchQuery('');
+                        bottomSheetRef.current?.snapToIndex(2);
+                    }}>
                         <Text style={styles.filterButtonText}>
                             <Ionicons name="filter" size={22}/>
                         </Text>
@@ -210,26 +243,28 @@ export default function SearchScreen() {
                 </Animated.View>
             )}
 
-            <MapView
+            {location && <MapView
                 ref={mapRef}
                 style={styles.map}
                 initialRegion={{
-                    latitude: 37.78825,
-                    longitude: -122.4324,
+                    latitude: location.latitude,
+                    longitude: location.longitude,
                     latitudeDelta: 0.0922,
                     longitudeDelta: 0.0421,
                 }}
+                showsUserLocation={true}
                 onPress={(event: MapPressEvent) => {
                     if (event.nativeEvent.action !== 'marker-press') {
                         setChosenRestaurant(null);
                         setFilterVisible(false);
+                        setSearchQuery('');
                         bottomSheetRef.current?.snapToIndex(0);
                     }
                 }}
             >
-                {visibleRestaurants.map((restaurant) => (
+                {restaurants && restaurants.map((restaurant) => (
                     <Marker
-                        key={restaurant.id}
+                        key={restaurant.addressId}
                         coordinate={{latitude: restaurant.latitude, longitude: restaurant.longitude}}
                         title={restaurant.name}
                         onPress={() => {
@@ -238,11 +273,27 @@ export default function SearchScreen() {
                             bottomSheetRef.current?.snapToIndex(1);
                         }}
                     >
-                        <FontAwesome5 name={typeToIcon[restaurant.type] || 'utensils'} size={30} color="#A1824A" />
-
+                        <FontAwesome5 name={typeToIcon[restaurant.type] || 'utensils'} size={30} color="#A1824A"/>
                     </Marker>
                 ))}
-            </MapView>
+            </MapView>}
+
+            <Modal visible={showModal} transparent={true} animationType="slide">
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Виберіть місто</Text>
+                        <Button
+                            title="Київ"
+                            onPress={() => handleCitySelect({latitude: 50.4501, longitude: 30.5234})}
+                        />
+                        <Button
+                            title="Львів"
+                            onPress={() => handleCitySelect({latitude: 49.8397, longitude: 24.0297})}
+                        />
+                    </View>
+                </View>
+            </Modal>
+
             <BottomSheet
                 ref={bottomSheetRef}
                 snapPoints={snapPoints}
@@ -268,15 +319,22 @@ export default function SearchScreen() {
                         style={styles.listOfSrollViewOnAdvert}
                         keyboardShouldPersistTaps="handled"
                     >
-                        <RestaurantFinal/>
+                        <RestaurantFinal addressId={chosenRestaurant.addressId} location={location}/>
                     </BottomSheetScrollView>
                 ) : (
                     <BottomSheetScrollView
                         style={styles.listOfSrollView}
                         keyboardShouldPersistTaps="handled"
                     >
-                        {restaurantsInBottomSheet.map((restaurant) => <RestaurantCard restaurant={restaurant}
-                                                                                      key={restaurant.id}/>)}
+                        {restaurants &&
+                            restaurants.map((restaurant) => (
+                                <TouchableOpacity
+                                    key={restaurant.addressId}
+                                    onPress={() => setChosenRestaurant(restaurant)}
+                                >
+                                    <RestaurantCard restaurant={restaurant}/>
+                                </TouchableOpacity>
+                            ))}
                     </BottomSheetScrollView>
                 )}
             </BottomSheet>
@@ -321,11 +379,11 @@ const styles = StyleSheet.create({
     },
     suggestionsList: {
         marginTop: 5,
-        borderBottomLeftRadius: 19, // Заокруглення з усіх боків
-        borderBottomRightRadius: 19, // Заокруглення з усіх боків
-        backgroundColor: 'white', // Фон списку
+        borderBottomLeftRadius: 19,
+        borderBottomRightRadius: 19,
+        backgroundColor: 'white',
         borderWidth: 1,
-        borderColor: '#ddd', // Легка сіра рамка
+        borderColor: '#ddd',
     },
     suggestionItem: {
         paddingVertical: 10,
@@ -372,5 +430,22 @@ const styles = StyleSheet.create({
 
     listOfSrollViewOnAdvert: {
         paddingTop: 15,
-    }
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        width: 300,
+        padding: 20,
+        backgroundColor: 'white',
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        marginBottom: 20,
+    },
 });

@@ -3,13 +3,26 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { Restaurant } from '../types/types.ts';
 
 interface RestaurantCardProps {
-    restaurant: Restaurant|undefined;
+    restaurant: Restaurant | undefined;
 }
 
 const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
-    if(restaurant === undefined) {
-        return <Text>Restaurant not find</Text>;
+    if (restaurant === undefined) {
+        return <Text>Restaurant not found</Text>;
     }
+
+    // Функція для конвертації метри/кілометри
+    const formatDistance = (distance: number) => {
+        return distance >= 1000
+            ? `${(distance / 1000).toFixed(1)} км`
+            : `${Math.round(distance)} м`;
+    };
+
+    // Функція для формату типів кухонь
+    const formatCuisineTypes = (cuisineTypes: string[]) => {
+        return cuisineTypes.join(' • ');
+    };
+
     return (
         <View style={styles.card}>
             <Image source={{ uri: restaurant.imageUrl }} style={styles.image} />
@@ -18,20 +31,26 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
                 {/* Назва і відстань в одному рядку */}
                 <View style={styles.row}>
                     <Text style={styles.name}>{restaurant.name}</Text>
-                    <Text style={styles.dotSeparator}>•</Text>
-                    <Text style={styles.distance}>
-                        {restaurant.distanceFromUser.toFixed(1)} km away
-                    </Text>
+                    {restaurant.distanceFromUser !== undefined && (
+                        <Text style={styles.distance}>
+                            {formatDistance(restaurant.distanceFromUser)}
+                        </Text>
+                    )}
                 </View>
 
-                {/* Рейтинг, кухня, ціна */}
+                {/* Рейтинг */}
                 <View style={styles.row}>
-                    <Text style={styles.infoText}>{restaurant.rating} / 5</Text>
-                    <Text style={styles.dotSeparator}>•</Text>
-                    <Text style={styles.infoText}>{restaurant.cuisineType}</Text>
-                    <Text style={styles.dotSeparator}>•</Text>
-                    <Text style={styles.infoText}>${restaurant.averagePrice}</Text>
+                    {restaurant.rating !== undefined && (
+                        <Text style={styles.infoText}>Рейтинг відвідувачів: {restaurant.rating} / 5</Text>
+                    )}
                 </View>
+
+                {/* Кухні в новому рядку */}
+                {restaurant.cuisineType.length > 0 && (
+                    <View style={styles.row}>
+                        <Text style={styles.cuisineTypeText}>{formatCuisineTypes(restaurant.cuisineType)}</Text>
+                    </View>
+                )}
 
                 {/* Фічі */}
                 <View style={styles.featuresContainer}>
@@ -49,26 +68,27 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
 const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
-        borderRadius: 12, // Загальний радіус заокруглення
+        borderRadius: 12,
         overflow: 'hidden',
         elevation: 3,
-        marginBottom: 16, // Відстань між картками
-        marginHorizontal: 16, // Відстань по сторонах
+        marginBottom: 16,
+        marginHorizontal: 16,
     },
     image: {
         width: '100%',
         height: 200,
-        borderRadius: 12, // Заокруглення для всіх кутів зображення
+        borderRadius: 12,
     },
     details: {
-       paddingTop:16,
+        paddingTop: 16,
         paddingBottom: 16,
-        paddingHorizontal: 4, // Відстань від країв до тексту
+        paddingHorizontal: 4,
     },
     row: {
-        flexDirection: 'row', // Елементи в ряд
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         alignItems: 'center',
-        marginBottom: 4, // Зменшена відстань між рядками
+        marginBottom: 4,
     },
     name: {
         fontFamily: 'PlusJakartaSans-Regular',
@@ -77,6 +97,7 @@ const styles = StyleSheet.create({
         lineHeight: 23,
         color: '#1C170D',
         textAlign: 'left',
+        flex: 1,
     },
     infoText: {
         fontFamily: 'PlusJakartaSans-Regular',
@@ -91,15 +112,19 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         lineHeight: 24,
         color: '#A1824A',
+        marginLeft: 'auto',
     },
-    dotSeparator: {
+    cuisineTypeText: {
+        fontFamily: 'PlusJakartaSans-Regular',
+        fontSize: 16,
+        fontWeight: '400',
+        lineHeight: 24,
         color: '#A1824A',
-        marginHorizontal: 4, // Відстань між крапкою та текстом
     },
     featuresContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 4, // Зменшена відстань між фічами та іншими елементами
+        marginBottom: 4,
     },
     featureBadge: {
         backgroundColor: '#f0f0f0',

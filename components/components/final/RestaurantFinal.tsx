@@ -1,39 +1,58 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, FlatList} from 'react-native';
 import {AboutSection} from "./AboutSection.tsx";
 import {ReviewsSection} from "./ReviewsSection.tsx";
-import {PlaceholderSection} from "./PlaceholderSection.tsx"; // Для зірочок рейтингу
+import {PlaceholderSection} from "./PlaceholderSection.tsx";
+import {RestaurantFinalType, Review} from "../../types/types.ts";
+import axios from "axios"; // Для зірочок рейтингу
 
 
+interface RestaurantFinalProps {
+    addressId?: number,
+    location?: { latitude: number; longitude: number } | null
+}
 
-export const RestaurantFinal = () => {
+export const RestaurantFinal = ({addressId, location}: RestaurantFinalProps) => {
     const [activeTab, setActiveTab] = useState('Про заклад');
-
+    const [restaurant, setRestaurant] = useState<RestaurantFinalType | null>(null);
+    const [reviews, setReviews] = useState<Review[]>([]);
     const tabs = ['Про заклад', 'Відгуки'];
+
+    useEffect(() => {
+        axios.get('http://localhost:8089/address/restaurant/' + addressId).then(response => {
+            setRestaurant(response.data);
+        });
+
+        axios.get('http://localhost:8089/address/restaurant/' + addressId + '/reviews').then(response => {
+            setReviews(response.data);
+        });
+
+    }, [addressId]);
 
     const renderContent = () => {
         switch (activeTab) {
             case 'Про заклад':
-                return <AboutSection />;
+                return <AboutSection restaurant={restaurant} location={location}/>;
             case 'Відгуки':
-                return <ReviewsSection />;
-            default:
-                return <PlaceholderSection />;
+                return <ReviewsSection reviews={reviews}/>;
         }
     };
 
     return (
         <View style={styles.container}>
             {/* Зображення на всю ширину */}
-            <Image source={{ uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg' }} style={styles.image} />
+            <Image
+                source={{uri: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg'}}
+                style={styles.image}/>
 
             {/* Назва ресторану */}
-            <Text style={styles.restaurantName}>Назва Ресторану</Text>
+            <Text style={styles.restaurantName}>{restaurant?.title}</Text>
 
             {/* Табуляція */}
             <View style={styles.tabsContainer}>
                 {tabs.map(tab => (
-                    <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)} style={[styles.tabItem, activeTab === tab && styles.activeTab]}>
+                    <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}
+                                      style={[styles.tabItem, activeTab === tab && styles.activeTab]}>
                         <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
                     </TouchableOpacity>
                 ))}

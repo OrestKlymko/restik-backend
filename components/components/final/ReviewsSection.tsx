@@ -1,65 +1,40 @@
-import React, {useState} from 'react';
-import {FlatList, StyleSheet, Text, View, TouchableOpacity, ScrollView} from "react-native";
+import React, {useEffect, useState} from 'react';
+import {StyleSheet, Text, View, TouchableOpacity, ScrollView} from "react-native";
 import Stars from 'react-native-stars';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import {ReviewModal} from './ReviewModal';  // Importing the modal component
+import {ReviewModal} from './ReviewModal';
+import {Review} from "../../types/types.ts";  // Importing the modal component
 
-interface Review {
-    id: number;
-    user: string;
-    date: string;
-    comment: string;
-    atmosphere: number;
-    food: number;
-    staff: number;
+
+interface ReviewsSectionProps {
+    reviews?: Review[]
 }
 
-export const ReviewsSection: React.FC = () => {
-    const [reviews, setReviews] = useState<Review[]>([
-        {
-            id: 1,
-            user: 'Іван',
-            date: '10 жовтня 2023',
-            comment: 'Дуже сподобалось!',
-            atmosphere: 4.7,
-            food: 4,
-            staff: 4.8
-        },
-        {
-            id: 2,
-            user: 'Олена',
-            date: '8 жовтня 2023',
-            comment: 'Смачна їжа та приємна атмосфера.',
-            atmosphere: 4.6,
-            food: 4.6,
-            staff: 4.7
-        },
-        {
-            id: 3,
-            user: 'Петро',
-            date: '5 жовтня 2023',
-            comment: 'Швидке обслуговування, рекомендую.',
-            atmosphere: 4.8,
-            food: 4.7,
-            staff: 4.9
-        },
-    ]);
+export const ReviewsSection = ({reviews}: ReviewsSectionProps) => {
+    console.log(reviews);
+    const [averageRating, setAverageRating] = useState(5);
+    useEffect(() => {
+        if (reviews) {
+            if (reviews.length > 0) {
+                const avg = (reviews[0].atmosphere + reviews[0].food + reviews[0].staff) / 3;
+                setAverageRating(avg);
+            } else {
+                setAverageRating(5);
+            }
+        }
+    }, [reviews]);
 
-    const averageRating = 4.6;
+
     const ratings: Record<string, number> = {
-        'Атмосфера': 4.7,
-        'Їжа': 4.6,
-        'Персонал': 4.8,
+        'Атмосфера': reviews && reviews.length > 0 ? reviews[0].atmosphere : 5,
+        'Їжа': reviews && reviews.length > 0 ? reviews[0].food : 5,
+        'Персонал': reviews && reviews.length > 0 ? reviews[0].staff : 5,
     };
 
     const [modalVisible, setModalVisible] = useState<boolean>(false);
 
     const handleAddReview = (newReview: Omit<Review, 'id'>) => {
-        const reviewWithId: Review = {
-            ...newReview,
-            id: reviews.length + 1,  // Assign a new id
-        };
-        setReviews([...reviews, reviewWithId]);
+        console.log(newReview);
     };
 
     return (
@@ -105,7 +80,7 @@ export const ReviewsSection: React.FC = () => {
 
             {/* Display reviews */}
             <ScrollView>
-                {reviews.map(item => (
+                {reviews?.map(item => (
                     <View style={styles.reviewItem} key={item.id}>
                         <Text style={styles.reviewUser}>{item.user}</Text>
                         <Text style={styles.reviewDate}>{item.date}</Text>
