@@ -34,3 +34,39 @@ export type Review ={
     food: number;
     staff: number;
 }
+
+
+export type BusinessLunch= {
+    id: number;
+    restaurantName: string;
+    imageUrl: string;
+    lunchName: string;
+    price: number;
+    time: string;
+    distanceFromUser: number;
+    description: string;
+}
+
+// Тип для пропозицій
+export type Offer= {
+    id: number;
+    restaurantName: string;
+    imageUrl: string;
+    offerName: string;
+    validUntil: string;
+    distanceFromUser: number;
+    description: string;
+    happyHours?: string; // Оскільки не всі пропозиції мають happyHours
+}
+
+// Тип для останнього шансу
+export type LastChance= {
+    id: number;
+    restaurantName: string;
+    productName: string;
+    imageUrl: string;
+    validUntil: string;
+    distanceFromUser: number;
+    oldPrice: number;
+    newPrice: number;
+}

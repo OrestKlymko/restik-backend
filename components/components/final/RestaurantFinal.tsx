@@ -2,7 +2,6 @@ import React, {useEffect, useState} from 'react';
 import {View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, FlatList} from 'react-native';
 import {AboutSection} from "./AboutSection.tsx";
 import {ReviewsSection} from "./ReviewsSection.tsx";
-import {PlaceholderSection} from "./PlaceholderSection.tsx";
 import {RestaurantFinalType, Review} from "../../types/types.ts";
 import axios from "axios"; // Для зірочок рейтингу
 

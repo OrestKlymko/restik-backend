@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, Alert, Easing } from 'react-native';
 import axios from 'axios';
 
 const AuthScreen = ({ navigation }: any): React.JSX.Element => {
@@ -8,38 +8,55 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
     const [password, setPassword] = useState('');
     const [role, setRole] = useState<'restaurateur' | 'owner'>('restaurateur');
     const [error, setError] = useState(''); // Для зберігання повідомлень про помилки
-
     const flipAnim = useRef(new Animated.Value(0)).current;
-    const rotationLogin = flipAnim.interpolate({
+
+    const rotationY = flipAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: ['0deg', '180deg'],
+        outputRange: ['0deg', '180deg'], // Обертання картки на 180 градусів
     });
-    const rotationRegister = flipAnim.interpolate({
+
+    const textRotation = flipAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: ['180deg', '360deg'],
+        outputRange: ['0deg', '180deg'], // Протилежне обертання тексту
     });
 
     const toggleAuthMode = () => {
-        setError(''); // Очистити помилки при зміні форми
+        setError(''); // Очистити помилки перед анімацією
         Animated.timing(flipAnim, {
-            toValue: isLogin ? 1 : 0,
-            duration: 500,
+            toValue: isLogin ? 1 : 0, // Використовуємо стан для перемикання
+            duration: 1000, // Тривалість анімації
+            easing: Easing.inOut(Easing.ease), // Easing для плавного обертання
             useNativeDriver: true,
-        }).start(() => setIsLogin(prevMode => !prevMode));
+        }).start();
     };
+
+    useEffect(() => {
+        const listenerId = flipAnim.addListener(({ value }) => {
+            // Зміна стану на середині (коли value більше 0.5)
+            if (value >= 0.5 && isLogin) {
+                setIsLogin(false);
+            } else if (value < 0.5 && !isLogin) {
+                setIsLogin(true);
+            }
+        });
+
+        return () => {
+            flipAnim.removeListener(listenerId);
+        };
+    }, [flipAnim, isLogin]);
 
     const handleAuth = () => {
         setError(''); // Очистити помилки перед новою спробою
 
         if (!email || !password) {
-            setError('Всі поля обов\'язкові.');
+            setError('Всі поля обовязкові.');
             return;
         }
 
         const user = { email, password };
 
         if (isLogin) {
-            axios.post('http://localhost:8082/login', user)
+            axios.post('http://localhost:8089/login', user)
                 .then((response) => {
                     console.log(response.status);
                     // Логіка успішного логіну
@@ -49,11 +66,14 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
                     setError('Неправильний логін або пароль.');
                 });
         } else {
-            axios.post('http://localhost:8082/registration', user)
+            axios.post('http://localhost:8089/registration', user)
                 .then((response) => {
                     console.log('Registered:', response.status);
                     if (role === 'owner') {
-                        navigation.navigate('AddRestaurant');
+                        navigation.navigate('Реєстрація користувача');
+                    } else if (role === 'restaurateur') {
+                        // Якщо роль ресторатор - переходимо до додавання ресторану
+                        navigation.navigate('Реєстрація закладу');
                     } else {
                         Alert.alert('Успішна реєстрація');
                     }
@@ -67,9 +87,11 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
 
     return (
         <View style={styles.container}>
-            <Animated.View style={[styles.formContainer, { transform: [{ rotateY: isLogin ? rotationLogin : rotationRegister }] }]}>
-                <View style={styles.innerContainer}>
-                    <Text style={styles.title}>{isLogin ? 'Логін' : 'Реєстрація'}</Text>
+            <Animated.View style={[styles.formContainer, { transform: [{ rotateY: rotationY }] }]}>
+                <Animated.View style={{ transform: [{ rotateY: textRotation }] }}>
+                    <Text style={styles.title}>
+                        {isLogin ? 'Логін' : 'Реєстрація'}
+                    </Text>
 
                     {error !== '' && <Text style={styles.errorText}>{error}</Text>}
 
@@ -116,7 +138,7 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
                             {isLogin ? 'Реєстрація' : 'Логін'}
                         </Text>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
             </Animated.View>
         </View>
     );
@@ -140,7 +162,7 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
     },
     innerContainer: {
-        transform: [{ rotateY: '0deg' }],
+        backfaceVisibility: 'hidden', // Фіксація тексту щоб не обертався задом наперед
     },
     title: {
         fontSize: 24,

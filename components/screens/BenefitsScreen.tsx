@@ -1,78 +1,9 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, TouchableOpacity, FlatList, StyleSheet, Image, Modal} from 'react-native';
+import {BusinessLunch, LastChance, Offer} from "../types/types.ts";
+import Geolocation from "react-native-geolocation-service";
 
-// Симуляція даних для бізнес-ланчів
-const businessLunches = [
-    {
-        id: 1,
-        restaurantName: 'La Piazza',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        lunchName: 'Бізнес-ланч №1',
-        price: 150,
-        time: '12:00 - 15:00',
-        distanceFromUser: 1.2,
-        description: 'Смачний обід із 3 страв. Суп, основне і десерт.',
-    },
-    {
-        id: 2,
-        restaurantName: 'Sushi World',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        lunchName: 'Бізнес-ланч №2',
-        time: '11:00 - 14:00',
-        price: 150,
-        distanceFromUser: 3.5,
-        description: 'Обід із суші сету та місо супу.',
-    },
-];
 
-// Симуляція даних для пропозицій
-const offers = [
-    {
-        id: 1,
-        restaurantName: 'La Piazza',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        offerName: 'Знижка 20% на піцу',
-        validUntil: '31 грудня 2023',
-        distanceFromUser: 1.2,
-        description: 'Отримайте знижку 20% на всі види піци.',
-        happyHours: '16:00 - 18:00',
-    },
-    {
-        id: 2,
-        restaurantName: 'Sushi World',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        offerName: '2 за ціною 1 на суші',
-        validUntil: '15 січня 2024',
-        distanceFromUser: 3.5,
-        description: 'Акція на суші: отримай другий сет безкоштовно.',
-    },
-];
-
-// Симуляція даних для останнього шансу
-const lastChance = [
-    {
-        id: 1,
-        restaurantName: 'Sushi World',
-        productName: 'Сирники',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        validUntil: '20:00',
-        distanceFromUser: 2.5,
-        oldPrice: 120,
-        newPrice: 80,
-    },
-    {
-        id: 2,
-        productName: 'Бургер',
-        restaurantName: 'Sushi World',
-        imageUrl: 'https://cdn.vox-cdn.com/thumbor/5d_RtADj8ncnVqh-afV3mU-XQv0=/0x0:1600x1067/1200x900/filters:focal(672x406:928x662)/cdn.vox-cdn.com/uploads/chorus_image/image/57698831/51951042270_78ea1e8590_h.7.jpg',
-        validUntil: '22:00',
-        distanceFromUser: 1.5,
-        oldPrice: 150,
-        newPrice: 100,
-    },
-];
-
-// Функція для перевірки, чи поточний час входить у вказаний діапазон
 const isInTimeRange = (timeRange: string) => {
     const [start, end] = timeRange.split(' - ').map(t => t.split(':'));
     const current = new Date();
@@ -80,7 +11,6 @@ const isInTimeRange = (timeRange: string) => {
     startTime.setHours(parseInt(start[0]), parseInt(start[1]), 0);
     const endTime = new Date(current);
     endTime.setHours(parseInt(end[0]), parseInt(end[1]), 0);
-
     return current >= startTime && current <= endTime;
 };
 
@@ -88,6 +18,47 @@ export default function BenefitsScreen() {
     const [activeTab, setActiveTab] = useState<'Lunch' | 'Offers' | 'LastChance'>('Lunch');
     const [selectedItem, setSelectedItem] = useState<any | null>(null); // Обране для модалки
     const [modalVisible, setModalVisible] = useState(false); // Контроль модалки
+    const [businessLunches, setBusinessLunches] = useState<BusinessLunch[]>([]);
+    const [offers, setOffers] = useState<Offer[]>([]);
+    const [lastChance, setLastChance] = useState<LastChance[]>([]);
+    const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    // const [showModal, setShowModal] = useState(false);
+
+
+    useEffect(() => {
+        if (!location) {
+            getCurrentLocation();
+        }
+        if (location) {
+            fetch(`http://localhost:8089/api/special-offers/business-lunch/${location.latitude}/${location.longitude}`)
+                .then(response => response.json())
+                .then(data => setBusinessLunches(data));
+
+            fetch(`http://localhost:8089/api/special-offers/${location.latitude}/${location.longitude}`)
+                .then(response => response.json())
+                .then(data => setOffers(data));
+
+            fetch(`http://localhost:8089/api/special-offers/last-chance/${location.latitude}/${location.longitude}`)
+                .then(response => response.json())
+                .then(data => setLastChance(data));
+        }
+    }, [location]);
+
+
+    const getCurrentLocation = () => {
+        Geolocation.getCurrentPosition(
+            (position) => {
+                const {latitude, longitude} = position.coords;
+                setLocation({latitude, longitude});
+                console.log('User location:', latitude, longitude);
+            },
+            (error) => {
+                console.log('Geolocation error', error);
+                // setShowModal(true);
+            },
+            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
+        );
+    };
 
     const renderBusinessLunchCard = ({item}: { item: any }) => {
         const isActive = isInTimeRange(item.time);
@@ -224,18 +195,18 @@ export default function BenefitsScreen() {
                                     style={styles.modalPrice}>Ціна: {selectedItem.price || selectedItem.newPrice} грн</Text>)
                             }
                             <View style={styles.buttonModal}>
-                            <TouchableOpacity
-                                style={styles.showRestaurantButton}
-                                onPress={() => setModalVisible(false)} // Закриваємо модальне вікно
-                            >
-                                <Text style={styles.showRestaurantText}>Показати заклад</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.showRestaurantButton}
-                                onPress={() => setModalVisible(false)} // Закриваємо модальне вікно
-                            >
-                                <Text style={styles.showRestaurantText}>Закрити</Text>
-                            </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.showRestaurantButton}
+                                    onPress={() => setModalVisible(false)} // Закриваємо модальне вікно
+                                >
+                                    <Text style={styles.showRestaurantText}>Показати заклад</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.showRestaurantButton}
+                                    onPress={() => setModalVisible(false)} // Закриваємо модальне вікно
+                                >
+                                    <Text style={styles.showRestaurantText}>Закрити</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     </View>
