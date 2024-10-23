@@ -36,7 +36,6 @@ const typeToIcon: Record<string, string> = {
 
 export default function SearchScreen() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
     const [restaurants, setRestaurants] = useState<Restaurant[]>();
     const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
     const [showModal, setShowModal] = useState(false);
@@ -51,6 +50,12 @@ export default function SearchScreen() {
 
     // Оновлюємо snapPoints, щоб додати 50%
     const snapPoints = useMemo(() => ['25%', '70%', '100%'], []);
+
+    const [selectedFilters, setSelectedFilters] = useState({
+        kitchenTypes: [],
+        restaurantTypes: [],
+        features: []
+    });
 
     useEffect(() => {
         requestLocationPermission();
@@ -147,17 +152,21 @@ export default function SearchScreen() {
         }
     }, [chosenRestaurant]);
 
-    const toggleFilter = (filter: string) => {
-        setSelectedFilters(prev =>
-            prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter]
-        );
-    };
 
-    const applyFilters = () => {
+    const onApplyFilters = (filter) => {
+        console.log(filter);
         if (location && selectedFilters.length > 0) {
-            axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}&features=${selectedFilters.join(',')}`).then((response) => {
-                setRestaurants(response.data);
-            });
+            const find = selectedFilters.find(filter => filter === "Відчинено зараз");
+            if (find) {
+                axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}&openNow=true&features=${selectedFilters.join(',')}`).then((response) => {
+                    setRestaurants(response.data);
+                });
+            } else {
+                axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}&features=${selectedFilters.join(',')}`).then((response) => {
+                    setRestaurants(response.data);
+                });
+            }
+
         } else {
             axios.get(`http://localhost:8089/address/coordinates?features=${selectedFilters.join(',')}`).then((response) => {
                 setRestaurants(response.data);
@@ -166,7 +175,11 @@ export default function SearchScreen() {
         setFilterVisible(false);
     }
     const clearFilters = () => {
-        setSelectedFilters([]);
+        setSelectedFilters({
+            kitchenTypes: [],
+            restaurantTypes: [],
+            features: []
+        });
         if (location) {
             axios.get(`http://localhost:8089/address/coordinates?lat=${location.latitude}&lon=${location.longitude}`).then((response) => {
                 setRestaurants(response.data);
@@ -308,10 +321,8 @@ export default function SearchScreen() {
                         keyboardShouldPersistTaps="handled"
                     >
                         <FilterComponent
-                            selectedFilters={selectedFilters}
-                            toggleFilter={toggleFilter}
-                            applyFilters={applyFilters}
-                            clearFilters={clearFilters}
+                            onApplyFilters={onApplyFilters}
+                            onClearFilters={clearFilters}
                         />
                     </BottomSheetScrollView>
                 ) : chosenRestaurant ? (
@@ -426,6 +437,7 @@ const styles = StyleSheet.create({
 
     listOfSrollView: {
         paddingTop: 35,
+        marginBottom:105
     },
 
     listOfSrollViewOnAdvert: {

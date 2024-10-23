@@ -67,12 +67,19 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant }) => {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        overflow: 'hidden',
-        elevation: 3,
-        marginBottom: 16,
-        marginHorizontal: 16,
+        backgroundColor: '#fff',  // Фон картки білий
+        borderRadius: 12,         // Закруглені кути картки
+        overflow: 'hidden',       // При закруглених кутах ховаємо вихідні елементи
+        elevation: 8,             // Глибша тінь для Android
+        shadowColor: '#000',      // Тінь для iOS
+        shadowOffset: { width: 0, height: 16 },  // Глибокий відступ тіні вниз
+        shadowOpacity: 0.2,       // Трохи сильніша тінь для iOS
+        shadowRadius: 10,         // Більший розмір тіні для більшого розсіювання
+        marginBottom: 16,         // Нижній відступ між картками
+        marginHorizontal: 16,     // Бокові відступи для карток
+        borderWidth: 1,           // Ширина рамки
+        borderColor: '#ddd',      // Колір рамки картки (світло-сірий для м'якого ефекту)
+        padding: 16,              // Внутрішні відступи для контенту
     },
     image: {
         width: '100%',

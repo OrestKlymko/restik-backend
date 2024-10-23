@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, Alert, Easing } from 'react-native';
+import {View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, Alert, Easing} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const AuthScreen = ({ navigation }: any): React.JSX.Element => {
@@ -58,8 +59,12 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
         if (isLogin) {
             axios.post('http://localhost:8089/login', user)
                 .then((response) => {
-                    console.log(response.status);
-                    // Логіка успішного логіну
+                    const accessToken = response.data;
+                    AsyncStorage.setItem('token', accessToken);
+
+                    if(role === 'restaurateur') {
+                        navigation.navigate('Мої ресторани');
+                    }
                 })
                 .catch((err) => {
                     console.log(err.response);
@@ -68,12 +73,13 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
         } else {
             axios.post('http://localhost:8089/registration', user)
                 .then((response) => {
-                    console.log('Registered:', response.status);
+                    const accessToken = response.data;
+                    AsyncStorage.setItem('token', accessToken);
                     if (role === 'owner') {
                         navigation.navigate('Реєстрація користувача');
                     } else if (role === 'restaurateur') {
                         // Якщо роль ресторатор - переходимо до додавання ресторану
-                        navigation.navigate('Реєстрація закладу');
+                        navigation.navigate('Мої ресторани');
                     } else {
                         Alert.alert('Успішна реєстрація');
                     }
@@ -115,14 +121,14 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
                     {!isLogin && (
                         <View style={styles.roleSelection}>
                             <TouchableOpacity
-                                style={[styles.roleButton, role === 'restaurateur' && styles.activeRoleButton]}
-                                onPress={() => setRole('restaurateur')}
+                                style={[styles.roleButton, role === 'owner' && styles.activeRoleButton]}
+                                onPress={() => setRole('owner')}
                             >
                                 <Text style={styles.roleButtonText}>Ресторанний критик</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.roleButton, role === 'owner' && styles.activeRoleButton]}
-                                onPress={() => setRole('owner')}
+                                style={[styles.roleButton, role === 'restaurateur' && styles.activeRoleButton]}
+                                onPress={() => setRole('restaurateur')}
                             >
                                 <Text style={styles.roleButtonText}>Ресторатор</Text>
                             </TouchableOpacity>

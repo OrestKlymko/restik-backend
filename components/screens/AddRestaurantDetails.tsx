@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Text,
     TextInput,
@@ -12,19 +12,16 @@ import {
 } from 'react-native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import axios from 'axios';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const MAX_DESCRIPTION_LENGTH = 250;
 
-const featuresList = [
-    'Wi-Fi',
-    'Паркінг',
-    'Тераса',
-    'Дитяча кімната',
-    'Доставка',
-    'Самовивіз',
-    'Вегетаріанські опції',
-    'Алкогольні напої',
-];
+type FeaturesResponse = {
+    id: number,
+    key: string,
+    valueUa: string,
+    valueRu: string
+}
 
 const daysOfWeek = [
     {day: 'Понеділок', key: 'MONDAY'},
@@ -36,17 +33,65 @@ const daysOfWeek = [
     {day: 'Неділя', key: 'SUNDAY'},
 ];
 
-export const AddRestaurantDetails = ({route}: any) => {
+export const AddRestaurantDetails = ({route, navigation}: any) => {
+    const {restaurantId} = route.params || {}; // Отримуємо restaurantId з параметрів, якщо він є
     const [description, setDescription] = useState('');
+    const {newRestaurantData} = route.params;
     const [phoneNumber, setPhoneNumber] = useState('+380 ');
     const [menuLink, setMenuLink] = useState('');
     const [selectedImages, setSelectedImages] = useState<any[]>([]);
     const [selectedMainImage, setSelectedMainImage] = useState<string | null>(null);
-    const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+    const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]); // Тепер зберігаємо ID фіч
+    const [features, setFeatures] = useState<FeaturesResponse[]>([])
     const [workSchedule, setWorkSchedule] = useState<{
         [key: string]: { open: string; close: string; enabled: boolean };
     }>({});
     const [isWorkScheduleModalVisible, setWorkScheduleModalVisible] = useState(false);
+    const [removedImages, setRemovedImages] = useState<any[]>([]);
+    const [removedFeatures, setRemovedFeatures] = useState<number[]>([]);
+    const [updatedWorkSchedule, setUpdatedWorkSchedule] = useState<{
+        [key: string]: { open: string; close: string; enabled: boolean };
+    }>({});
+    const [bucket, setBucket] = useState<string | null>(null);
+
+    useEffect(() => {
+        axios.get('http://localhost:8089/api/restaurants/features').then((response) => {
+            setFeatures(response.data);
+        });
+
+        if (restaurantId) {
+            axios.get(`http://localhost:8089/api/restaurants/${restaurantId}`)
+                .then((response) => {
+                    setBucket(response.data.images[0].bucketName)
+                    setMenuLink(response.data.menuLink)
+                    setPhoneNumber(response.data.phoneNumber)
+                    setDescription(response.data.description)
+                    setSelectedMainImage(response.data.mainPhoto)
+                    setSelectedFeatures(response.data.features)
+                    const formattedImages = response.data.images.map((img, index) => ({
+                        uri: img.image,
+                        id: index, // Додаємо унікальний ідентифікатор
+                        bucketName: img.bucketName,
+                    }));
+                    setSelectedImages(formattedImages);
+                    const workDaysDatas = {};
+                    response.data.workDays.forEach((day: { day: string, openFrom: string, openTo: string }) => {
+                        workDaysDatas[day.day] = {
+                            open: day.openFrom.slice(0, 5),
+                            close: day.openTo.slice(0, 5),
+                            enabled: true, // Встановлюємо, що день активний
+                        };
+                    });
+                    setWorkSchedule(workDaysDatas); // Встановлюємо робочий графік
+                    setUpdatedWorkSchedule(workDaysDatas);
+                })
+                .catch((error) => {
+                    console.log('Помилка під час отримання даних ресторану:', error);
+                    Alert.alert('Помилка', 'Не вдалося завантажити дані ресторану');
+                    navigation.navigate('Мої ресторани')
+                });
+        }
+    }, []);
 
     const handlePhoneNumberChange = (text: string) => {
         const cleanedText = text.replace(/[^0-9]/g, '');
@@ -70,18 +115,20 @@ export const AddRestaurantDetails = ({route}: any) => {
         setSelectedMainImage(uri);
     };
 
-    const handleRemoveImage = (uri: string) => {
-        setSelectedImages(selectedImages.filter(image => image.uri !== uri));
-        if (selectedMainImage === uri) {
-            setSelectedMainImage(null);
-        }
-    };
+    // const handleRemoveImage = (uri: string) => {
+    //     setSelectedImages(selectedImages.filter(image => image.uri !== uri));
+    //     if (selectedMainImage === uri) {
+    //         setSelectedMainImage(null);
+    //     }
+    // };
 
-    const handleToggleFeature = (feature: string) => {
-        if (selectedFeatures.includes(feature)) {
-            setSelectedFeatures(selectedFeatures.filter(f => f !== feature));
+    const handleToggleFeature = (featureId: number) => {
+        if (selectedFeatures.includes(featureId)) {
+            setRemovedFeatures([...removedFeatures, featureId]);
+            setSelectedFeatures(selectedFeatures.filter(f => f !== featureId));
         } else {
-            setSelectedFeatures([...selectedFeatures, feature]);
+            setSelectedFeatures([...selectedFeatures, featureId]);
+            setRemovedFeatures(removedFeatures.filter(f => f !== featureId)); // Видаляємо з видалених, якщо додаємо
         }
     };
 
@@ -108,57 +155,124 @@ export const AddRestaurantDetails = ({route}: any) => {
             }
         );
     };
-
+    const handleRemoveImage = (uri: string) => {
+        const imageToRemove = selectedImages.find(image => image.uri === uri);
+        console.log(uri)
+        if (imageToRemove && imageToRemove.bucketName) {
+            setRemovedImages([...removedImages, imageToRemove]);
+        }
+        setSelectedImages(selectedImages.filter(image => image.uri !== uri));
+        if (selectedMainImage === uri) {
+            setSelectedMainImage(null);
+        }
+    };
     const handleSaveRestaurant = async () => {
-        if (description.trim() === '' || phoneNumber.trim() === '' || selectedImages.length === 0) {
-            Alert.alert(
-                'Помилка',
-                "Заповніть всі обов'язкові поля та додайте хоча б одну фотографію."
-            );
+        if (description.trim() === '' || phoneNumber.trim() === '' || selectedImages.length === 0 || !workSchedule) {
+            Alert.alert('Помилка', "Заповніть всі обов'язкові поля та додайте хоча б одну фотографію.");
             return;
         }
 
-        const formData = new FormData();
-
-        formData.append('description', description);
-        formData.append('phoneNumber', phoneNumber);
-        formData.append('menuLink', menuLink || '');
-        formData.append('selectedFeatures', JSON.stringify(selectedFeatures));
-        formData.append('workSchedule', JSON.stringify(workSchedule));
-
-        // Додаємо зображення
-        selectedImages.forEach((image, index) => {
-            formData.append('selectedImages', {
-                uri: image.uri,
-                type: image.type || 'image/jpeg',
-                name: image.name || `image_${index}.jpg`,
-            });
-        });
-
-        // Додаємо головне зображення (якщо є)
-        if (selectedMainImage) {
-            const mainImage = selectedImages.find(image => image.uri === selectedMainImage);
-            if (mainImage) {
-                formData.append('selectedMainImage', {
-                    uri: mainImage.uri,
-                    type: mainImage.type || 'image/jpeg',
-                    name: mainImage.name || 'main_image.jpg',
-                });
-            }
-        }
+        const token = await AsyncStorage.getItem('token');
 
         try {
-            const response = await axios.post('http://localhost:8089/api/restaurants', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            if (restaurantId) {
+                const formData = new FormData();
+                formData.append('description', description);
+                formData.append('phoneNumber', phoneNumber);
+                formData.append('menuLink', menuLink || '');
+                formData.append('selectedFeatures', JSON.stringify(selectedFeatures));
+                formData.append('workSchedule', JSON.stringify(updatedWorkSchedule));
 
-            console.log('Restaurant added:', response.status);
-            Alert.alert('Успішно', 'Ресторан додано');
+                selectedImages
+                    .filter(image => !image.bucketName)
+                    .forEach((image, index) => {
+                        formData.append('selectedImages', {
+                            uri: image.uri,
+                            type: image.type || 'image/jpeg',
+                            name: image.name || `image_${index}.jpg`,
+                        });
+                    });
+
+                if (selectedMainImage) {
+                    const mainImage = selectedImages.find(image => image.uri === selectedMainImage);
+                    if (mainImage) {
+                        formData.append('selectedMainImage', {
+                            uri: mainImage.uri,
+                            type: mainImage.type || 'image/jpeg',
+                            name: mainImage.name || 'main_image.jpg',
+                        });
+                    }
+                }
+                // Додаємо видалені зображення
+                if (removedImages.length > 0) {
+                    formData.append('removedImages', JSON.stringify(removedImages.map(img => img.uri)));
+                }
+
+                // Додаємо видалені фічі
+                if (removedFeatures.length > 0) {
+                    formData.append('removedFeatures', JSON.stringify(removedFeatures));
+                }
+                formData.append('bucket', bucket);
+
+                await axios.post(`http://localhost:8089/api/restaurants/${restaurantId}`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+            } else {
+                const formData = new FormData();
+                formData.append('description', description);
+                formData.append('phoneNumber', phoneNumber);
+                formData.append('street', newRestaurantData.street);
+                formData.append('buildingNumber', newRestaurantData.buildingNumber);
+                formData.append('city', newRestaurantData.city);
+                formData.append('latitude', newRestaurantData.latitude);
+                formData.append('longitude', newRestaurantData.longitude);
+                formData.append('name', newRestaurantData.name);
+                if (newRestaurantData.isNewRestaurant) {
+                    formData.append('restaurantType', newRestaurantData.restaurantType);
+                    formData.append('kitchenType', newRestaurantData.kitchenType);
+                }
+                formData.append('menuLink', menuLink || '');
+                formData.append('selectedFeatures', JSON.stringify(selectedFeatures));
+                formData.append('workSchedule', JSON.stringify(updatedWorkSchedule));
+
+                // Додаємо нові зображення
+                selectedImages
+                    .filter(image => !image.bucketName)
+                    .forEach((image, index) => {
+                        formData.append('selectedImages', {
+                            uri: image.uri,
+                            type: image.type || 'image/jpeg',
+                            name: image.name || `image_${index}.jpg`,
+                        });
+                    });
+
+                // Додаємо головне зображення
+                if (selectedMainImage) {
+                    const mainImage = selectedImages.find(image => image.uri === selectedMainImage);
+                    if (mainImage) {
+                        formData.append('selectedMainImage', {
+                            uri: mainImage.uri,
+                            type: mainImage.type || 'image/jpeg',
+                            name: mainImage.name || 'main_image.jpg',
+                        });
+                    }
+                }
+
+                await axios.post('http://localhost:8089/api/restaurants', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+            }
+
+            navigation.navigate('Мої ресторани');
         } catch (error) {
             console.error(error);
-            Alert.alert('Помилка', 'Не вдалося додати ресторан');
+            Alert.alert('Помилка', 'Не вдалося зберегти ресторан');
         }
     };
 
@@ -174,6 +288,15 @@ export const AddRestaurantDetails = ({route}: any) => {
                 [field]: value,
             },
         });
+
+        // Оновлюємо графік, що відправимо на сервер
+        setUpdatedWorkSchedule({
+            ...updatedWorkSchedule,
+            [dayKey]: {
+                ...updatedWorkSchedule[dayKey],
+                [field]: value,
+            },
+        });
     };
 
     const toggleDay = (dayKey: string) => {
@@ -185,6 +308,7 @@ export const AddRestaurantDetails = ({route}: any) => {
             },
         });
     };
+
 
     const formatTimeInput = (value: string) => {
         const numericValue = value.replace(/[^0-9]/g, '');
@@ -314,23 +438,22 @@ export const AddRestaurantDetails = ({route}: any) => {
 
             <Text style={styles.fieldLabel}>Фічі ресторану</Text>
             <View style={styles.featuresContainer}>
-                {featuresList.map((feature, index) => (
+                {features.map((feature) => (
                     <TouchableOpacity
-                        key={index}
+                        key={feature.id}
                         style={[
                             styles.featureButton,
-                            selectedFeatures.includes(feature) && styles.featureButtonSelected,
+                            selectedFeatures.includes(feature.id) && styles.featureButtonSelected,
                         ]}
-                        onPress={() => handleToggleFeature(feature)}
+                        onPress={() => handleToggleFeature(feature.id)}
                     >
                         <Text
                             style={[
                                 styles.featureButtonText,
-                                selectedFeatures.includes(feature) &&
-                                styles.featureButtonTextSelected,
+                                selectedFeatures.includes(feature.id) && styles.featureButtonTextSelected,
                             ]}
                         >
-                            {feature}
+                            {feature.valueUa}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -379,7 +502,7 @@ export const AddRestaurantDetails = ({route}: any) => {
                     Головне фото:{' '}
                     {selectedMainImage
                         ? 'Вибрано'
-                        : 'Не вибрано (натисніть на зображення, щоб вибрати)'}
+                        : 'Не вибрано (натисніть на зображення, щоб вибрати головне)'}
                 </Text>
             )}
 
@@ -452,6 +575,7 @@ const styles = StyleSheet.create({
     },
     selectedImage: {
         borderColor: '#000',
+        borderWidth: 4,
     },
     removeImageButton: {
         position: 'absolute',

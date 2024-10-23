@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     Text,
     TextInput,
@@ -14,7 +14,8 @@ import {
     Animated,
 } from 'react-native';
 import Autocomplete from 'react-native-autocomplete-input';
-import { Picker } from '@react-native-picker/picker';
+import {Picker} from '@react-native-picker/picker';
+import Geolocation from 'react-native-geolocation-service';
 import axios from 'axios';
 
 interface Restaurant {
@@ -29,11 +30,14 @@ interface KitchenType {
 }
 
 interface RestaurantType {
+    id: number;
     typeRest: number;
     typeRestUa: string;
 }
 
-export const RestaurantStep = ({ navigation }: any) => {
+
+
+export const RestaurantStep = ({navigation, route}: any) => {
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [restaurantTypes, setRestaurantTypes] = useState<RestaurantType[]>([]);
     const [kitchenTypes, setKitchenTypes] = useState<KitchenType[]>([]);
@@ -43,13 +47,19 @@ export const RestaurantStep = ({ navigation }: any) => {
     const [isNewRestaurant, setIsNewRestaurant] = useState(false);
     const [selectedRestaurantType, setSelectedRestaurantType] = useState<string>('');
     const [selectedKitchenType, setSelectedKitchenType] = useState<string>('');
-    const [tempSelectedRestaurantType, setTempSelectedRestaurantType] = useState<string>('');
-    const [tempSelectedKitchenType, setTempSelectedKitchenType] = useState<string>('');
+    const [tempSelectedRestaurantType, setTempSelectedRestaurantType] = useState<string | null>(null); // Додаємо null як початкове значення
+    const [tempSelectedKitchenType, setTempSelectedKitchenType] = useState<string | null>(null); // Додаємо null як початкове значення
     const [city, setCity] = useState('');
     const [street, setStreet] = useState('');
     const [buildingNumber, setBuildingNumber] = useState('');
+    const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
     const [isRestaurantTypeModalVisible, setRestaurantTypeModalVisible] = useState(false);
     const [isKitchenTypeModalVisible, setKitchenTypeModalVisible] = useState(false);
+    const [restType, setRestType] = useState<number>();
+    const [kitchen, setKitchenType] = useState<number>();
+    const [isEditMode, setIsEditMode] = useState<boolean>(false);
+    const {restaurantId} = route.params || {}; // Отримуємо restaurantId з параметрів, якщо він є
 
     const scaleAnim = useState(new Animated.Value(1))[0];
 
@@ -59,13 +69,50 @@ export const RestaurantStep = ({ navigation }: any) => {
         });
 
         axios.get('http://localhost:8089/api/restaurants/kitchen-types').then((response) => {
-            setKitchenTypes(response.data);
+            setKitchenTypes(response.data as KitchenType[]);
+
+            if (response.data.length > 0) {
+                setTempSelectedKitchenType(response.data[0].valueUa);
+                setSelectedKitchenType(response.data[0].valueUa);
+                setKitchenType(response.data[0].id);
+            }
         });
 
         axios.get('http://localhost:8089/api/restaurants/types').then((response) => {
             setRestaurantTypes(response.data);
+
+            if (response.data.length > 0) {
+                setTempSelectedRestaurantType(response.data[0].typeRestUa);
+                setSelectedRestaurantType(response.data[0].typeRestUa);
+                setRestType(response.data[0].id);
+            }
         });
-    }, []);
+
+        if (restaurantId) {
+            // Якщо restaurantId присутній, це режим редагування
+            setIsEditMode(true);
+            // Отримуємо дані ресторану для редагування
+            axios.get(`http://localhost:8089/api/restaurants/${restaurantId}`)
+                .then((response) => {
+                    console.log(response.data);
+                    setQuery(response.data.title);
+                    setCity(response.data.city);
+                    setStreet(response.data.street);
+                    setBuildingNumber(response.data.streetNumber);
+                    setLatitude(response.data.latitude);
+                    setLongitude(response.data.longitude);
+                    // Додаємо логіку для вибору типу ресторану і типу кухні
+                    setSelectedRestaurantType(response.data.restaurantTypeUa);
+                    setSelectedKitchenType(response.data.kitchenTypeUa);
+                    setRestType(response.data.restaurantTypeId);
+                    setKitchenType(response.data.kitchenTypeId);
+                })
+                .catch((error) => {
+                    console.log('Помилка під час отримання даних ресторану:', error);
+                    Alert.alert('Помилка', 'Не вдалося завантажити дані ресторану');
+                });
+        }
+    }, [restaurantId]);
 
     const findRestaurant = (text: string) => {
         if (text) {
@@ -87,34 +134,39 @@ export const RestaurantStep = ({ navigation }: any) => {
     };
 
     const handleAddNewRestaurant = () => {
-        let isValid = true;
+        // Validate all required fields
+        // if (!query || !selectedRestaurantType || !selectedKitchenType || !city || !street || !buildingNumber) {
+        //     Alert.alert('Помилка', 'Заповніть усі поля');
+        //     return;
+        // }
 
-        if (!city || !street || !buildingNumber) {
-            Alert.alert('Помилка', 'Заповніть усі поля');
-            isValid = false;
-        }
+        const newRestaurantData = {
+            name: query,
+            restaurantType: restType,
+            kitchenType: kitchen,
+            city,
+            street,
+            buildingNumber,
+            latitude,
+            longitude,
+            isNewRestaurant,
+            restaurantId
+        };
 
-        if (isValid) {
-            const newRestaurantData = {
-                name: query,
-                restaurantType: selectedRestaurantType,
-                kitchenType: selectedKitchenType,
-                city,
-                street,
-                buildingNumber,
-            };
-            console.log('Додано новий ресторан:', newRestaurantData);
-            navigation.navigate('Деталі закладу', { newRestaurantData });
-        }
+        navigation.navigate('Деталі закладу', {newRestaurantData});
     };
 
     const handleConfirmRestaurantType = () => {
-        setSelectedRestaurantType(tempSelectedRestaurantType);
+        if (tempSelectedRestaurantType) {
+            setSelectedRestaurantType(tempSelectedRestaurantType);
+        }
         setRestaurantTypeModalVisible(false);
     };
 
     const handleConfirmKitchenType = () => {
-        setSelectedKitchenType(tempSelectedKitchenType);
+        if (tempSelectedKitchenType) {
+            setSelectedKitchenType(tempSelectedKitchenType);
+        }
         setKitchenTypeModalVisible(false);
     };
 
@@ -132,6 +184,59 @@ export const RestaurantStep = ({ navigation }: any) => {
             }),
         ]).start(handleAddNewRestaurant);
     };
+
+
+    const handleAddressFieldChange = (value: string, setField: (text: string) => void) => {
+        setField(value);
+        setLatitude(null);
+        setLongitude(null);
+    };
+
+    const getCurrentLocation = () => {
+        Geolocation.getCurrentPosition(
+            async (position) => {
+                const {latitude, longitude} = position.coords;
+                setLatitude(latitude);
+                setLongitude(longitude);
+
+                // Call reverse geocoding API to get address from coordinates
+                try {
+                    const response = await axios.get(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+                    );
+                    const address = response.data.address;
+                    setCity(address.city || address.town || address.village || '');
+                    setStreet(address.road || '');
+                    setBuildingNumber(address.house_number || '');
+                } catch (error) {
+                    console.error('Помилка під час зворотного геокодування:', error);
+                    Alert.alert('Помилка', 'Не вдалося отримати адресу, будь ласка введіть адресу в поля');
+                }
+            },
+            (error) => {
+                Alert.alert('Помилка отримання геолокації', error.message);
+            },
+            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
+        );
+    };
+
+
+    function setRestTypeInFunction(itemValue: string | null) {
+        setTempSelectedRestaurantType(itemValue);
+        console.log(itemValue);
+        const restaurantTypes1 = restaurantTypes.filter(type => type.typeRestUa === itemValue);
+        if (restaurantTypes1 && restaurantTypes1.length > 0) {
+            setRestType(restaurantTypes1[0].id)
+        }
+    }
+
+    function setSelectedKitche(itemValue: string | null) {
+        console.log(itemValue);
+        const kitchenTypes1 = kitchenTypes.filter(type => type.valueUa === itemValue);
+        if (kitchenTypes1 && kitchenTypes1.length > 0) {
+            setKitchenType(kitchenTypes1[0].id);
+        }
+    }
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -151,7 +256,7 @@ export const RestaurantStep = ({ navigation }: any) => {
                     placeholder="Введіть назву ресторану"
                     flatListProps={{
                         keyExtractor: (item) => item.id.toString(),
-                        renderItem: ({ item }) => (
+                        renderItem: ({item}) => (
                             <TouchableOpacity onPress={() => handleRestaurantSelect(item)}>
                                 <Text style={styles.itemText}>{item.title}</Text>
                             </TouchableOpacity>
@@ -162,11 +267,9 @@ export const RestaurantStep = ({ navigation }: any) => {
                     listContainerStyle={styles.listContainer}
                 />
 
-
-
-                {/* Поля для нового ресторану або заповнення тільки адреси для вибраного ресторану */}
-                {isNewRestaurant ? (
+                {(isNewRestaurant || isEditMode) ? (
                     <>
+                        {/* Тип ресторану */}
                         <Text style={styles.fieldLabel}>Тип ресторану</Text>
                         <TouchableOpacity
                             style={styles.dropdown}
@@ -188,11 +291,12 @@ export const RestaurantStep = ({ navigation }: any) => {
                                     <Text style={styles.modalTitle}>Оберіть тип ресторану</Text>
                                     <Picker
                                         selectedValue={tempSelectedRestaurantType}
-                                        onValueChange={(itemValue) => setTempSelectedRestaurantType(itemValue)}
+                                        onValueChange={(itemValue) => setRestTypeInFunction(itemValue)}
                                         style={styles.picker}
                                     >
                                         {restaurantTypes.map((type: RestaurantType) => (
-                                            <Picker.Item key={type.typeRest} label={type.typeRestUa} value={type.typeRestUa} />
+                                            <Picker.Item key={type.typeRest} label={type.typeRestUa}
+                                                         value={type.typeRestUa}/>
                                         ))}
                                     </Picker>
                                     <TouchableOpacity
@@ -205,6 +309,7 @@ export const RestaurantStep = ({ navigation }: any) => {
                             </View>
                         </Modal>
 
+                        {/* Тип кухні */}
                         <Text style={styles.fieldLabel}>Тип кухні</Text>
                         <TouchableOpacity
                             style={styles.dropdown}
@@ -226,11 +331,12 @@ export const RestaurantStep = ({ navigation }: any) => {
                                     <Text style={styles.modalTitle}>Оберіть тип кухні</Text>
                                     <Picker
                                         selectedValue={tempSelectedKitchenType}
-                                        onValueChange={(itemValue) => setTempSelectedKitchenType(itemValue)}
+                                        onValueChange={(itemValue) => setSelectedKitche(itemValue)}
                                         style={styles.picker}
                                     >
                                         {kitchenTypes.map((kitchen: KitchenType) => (
-                                            <Picker.Item key={kitchen.id} label={kitchen.valueUa} value={kitchen.valueUa} />
+                                            <Picker.Item key={kitchen.id} label={kitchen.valueUa}
+                                                         value={kitchen.valueUa}/>
                                         ))}
                                     </Picker>
                                     <TouchableOpacity
@@ -251,7 +357,7 @@ export const RestaurantStep = ({ navigation }: any) => {
                     style={styles.input}
                     placeholder="Місто"
                     value={city}
-                    onChangeText={setCity}
+                    onChangeText={(text) => handleAddressFieldChange(text, setCity)}
                 />
 
                 <Text style={styles.fieldLabel}>Вулиця</Text>
@@ -259,7 +365,7 @@ export const RestaurantStep = ({ navigation }: any) => {
                     style={styles.input}
                     placeholder="Вулиця"
                     value={street}
-                    onChangeText={setStreet}
+                    onChangeText={(text) => handleAddressFieldChange(text, setStreet)}
                 />
 
                 <Text style={styles.fieldLabel}>Номер будинку</Text>
@@ -267,10 +373,15 @@ export const RestaurantStep = ({ navigation }: any) => {
                     style={styles.input}
                     placeholder="Номер будинку"
                     value={buildingNumber}
-                    onChangeText={setBuildingNumber}
+                    onChangeText={(text) => handleAddressFieldChange(text, setBuildingNumber)}
                 />
 
-                <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                {/* Button for Geolocation */}
+                <TouchableOpacity style={styles.geoButton} onPress={getCurrentLocation}>
+                    <Text style={styles.geoButtonText}>Використати мої координати</Text>
+                </TouchableOpacity>
+
+                <Animated.View style={{transform: [{scale: scaleAnim}]}}>
                     <TouchableOpacity style={styles.nextButton} onPress={animateButtonPress}>
                         <Text style={styles.nextButtonText}>Продовжити</Text>
                     </TouchableOpacity>
@@ -360,6 +471,18 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         textAlign: 'center',
+    },
+    geoButton: {
+        backgroundColor: '#000',
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 16,
+        alignItems: 'center',
+    },
+    geoButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
     nextButton: {
         backgroundColor: '#996E4D',
