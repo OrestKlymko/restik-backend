@@ -1,107 +1,44 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import RNPickerSelect from 'react-native-picker-select';
+import React from 'react';
+import {createDrawerNavigator} from '@react-navigation/drawer';
+import {View, Text, StyleSheet, Button} from 'react-native';
+import {AddRestaurantDetails} from "./AddRestaurantDetails.tsx";
+import BenefitsScreen from "./BenefitsScreen.tsx";
+import RestaurantBookingsScreen from "../components/RestaurantBookingsScreen.tsx";
 
-// Екрани для трьох можливостей
-const EditRestaurantScreen = () => (
-    <View style={styles.screenContainer}>
-        <Text>Редагування оголошення</Text>
-    </View>
-);
 
-const OffersScreen = () => (
-    <View style={styles.screenContainer}>
-        <Text>Пропозиції ресторану</Text>
-    </View>
-);
 
-const BookingScreen = () => (
-    <View style={styles.screenContainer}>
-        <Text>Бронювання столиків</Text>
-    </View>
-);
 
-export const RestaurantDetailScreen = ({ route }: any) => {
-    const { restaurantId } = route.params; // Отримуємо ID ресторану
-    const [selectedScreen, setSelectedScreen] = useState('edit'); // Стан для вибору екрану
+// Drawer Navigator
+const Drawer = createDrawerNavigator();
 
-    // Змінна, яка визначає, який екран відображати
-    const renderScreen = () => {
-        switch (selectedScreen) {
-            case 'edit':
-                return <EditRestaurantScreen />;
-            case 'offers':
-                return <OffersScreen />;
-            case 'booking':
-                return <BookingScreen />;
-            default:
-                return <EditRestaurantScreen />;
-        }
-    };
+interface RestaurantDrawerNavigatorProps {
+    id: number
+}
 
+const RestaurantDrawerNavigator = ({id}: RestaurantDrawerNavigatorProps) => {
     return (
-        <View style={styles.container}>
-            {/* Випадаючий список для вибору екрану */}
-            <RNPickerSelect
-                onValueChange={(value) => setSelectedScreen(value)}
-                items={[
-                    { label: 'Редагування оголошення', value: 'edit' },
-                    { label: 'Пропозиції ресторану', value: 'offers' },
-                    { label: 'Бронювання столиків', value: 'booking' },
-                ]}
-                style={pickerSelectStyles}
-                placeholder={{
-                    label: 'Оберіть дію...',
-                    value: null,
-                }}
-            />
-
-            {/* Відображення вибраного екрану */}
-            <View style={styles.content}>
-                {renderScreen()}
-            </View>
-        </View>
+        <Drawer.Navigator initialRouteName="Редагування оголошення">
+            <Drawer.Screen name="Редагування оголошення" component={AddRestaurantDetails}
+                           initialParams={{restaurantId: id}}/>
+            <Drawer.Screen name="Пропозиції ресторану" component={BenefitsScreen} initialParams={{restaurantId: id}}/>
+            <Drawer.Screen name="Бронювання столиків" component={RestaurantBookingsScreen} initialParams={{restaurantId: id}}/>
+        </Drawer.Navigator>
     );
 };
 
-// Стилі для екрану
+export const RestaurantDetailScreen = ({route}) => {
+    const {restaurantId} = route.params; // Отримуємо ID ресторану для майбутнього використання
+
+    return (
+        <RestaurantDrawerNavigator id={restaurantId}/>
+    );
+};
+
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 16,
-        backgroundColor: '#f9f9f9',
-    },
     screenContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    content: {
-        flex: 1,
-        marginTop: 20,
-    },
-});
-
-// Стилі для Picker
-const pickerSelectStyles = StyleSheet.create({
-    inputIOS: {
-        fontSize: 16,
-        paddingVertical: 12,
-        paddingHorizontal: 10,
-        borderWidth: 1,
-        borderColor: 'gray',
-        borderRadius: 4,
-        color: 'black',
-        paddingRight: 30, // Додаткове місце для іконки
-    },
-    inputAndroid: {
-        fontSize: 16,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        borderWidth: 0.5,
-        borderColor: 'gray',
-        borderRadius: 8,
-        color: 'black',
-        paddingRight: 30, // Додаткове місце для іконки
+        padding: 16,
     },
 });

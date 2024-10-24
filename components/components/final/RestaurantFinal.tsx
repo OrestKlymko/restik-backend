@@ -31,7 +31,7 @@ export const RestaurantFinal = ({addressId, location}: RestaurantFinalProps) => 
     const renderContent = () => {
         switch (activeTab) {
             case 'Про заклад':
-                return <AboutSection restaurant={restaurant} location={location}/>;
+                return <AboutSection restaurant={restaurant} location={location} addressId={addressId}/>;
             case 'Відгуки':
                 return <ReviewsSection reviews={reviews}/>;
         }

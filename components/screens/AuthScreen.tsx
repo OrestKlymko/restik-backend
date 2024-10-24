@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {View, Text, TextInput, StyleSheet, Animated, TouchableOpacity, Alert, Easing} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const AuthScreen = ({ navigation }: any): React.JSX.Element => {
+const AuthScreen = ({navigation}: any): React.JSX.Element => {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,7 +32,7 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
     };
 
     useEffect(() => {
-        const listenerId = flipAnim.addListener(({ value }) => {
+        const listenerId = flipAnim.addListener(({value}) => {
             // Зміна стану на середині (коли value більше 0.5)
             if (value >= 0.5 && isLogin) {
                 setIsLogin(false);
@@ -54,15 +54,19 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
             return;
         }
 
-        const user = { email, password };
+        const user = {email, password, role};
+        const login = {email, password}
 
         if (isLogin) {
-            axios.post('http://localhost:8089/login', user)
+            axios.post('http://localhost:8089/login', login)
                 .then((response) => {
-                    const accessToken = response.data;
+                    const accessToken = response.data.token;
+                    const roleUser = response.data.role;
                     AsyncStorage.setItem('token', accessToken);
-
-                    if(role === 'restaurateur') {
+                    if (roleUser === 'owner') {
+                        navigation.navigate('Мій кабінет');
+                    } else if (roleUser === 'restaurateur') {
+                        // Якщо роль ресторатор - переходимо до додавання ресторану
                         navigation.navigate('Мої ресторани');
                     }
                 })
@@ -73,11 +77,12 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
         } else {
             axios.post('http://localhost:8089/registration', user)
                 .then((response) => {
-                    const accessToken = response.data;
+                    const accessToken = response.data.token;
+                    const roleUser = response.data.role;
                     AsyncStorage.setItem('token', accessToken);
-                    if (role === 'owner') {
-                        navigation.navigate('Реєстрація користувача');
-                    } else if (role === 'restaurateur') {
+                    if (roleUser === 'owner') {
+                        navigation.navigate('Мій кабінет');
+                    } else if (roleUser === 'restaurateur') {
                         // Якщо роль ресторатор - переходимо до додавання ресторану
                         navigation.navigate('Мої ресторани');
                     } else {
@@ -93,8 +98,8 @@ const AuthScreen = ({ navigation }: any): React.JSX.Element => {
 
     return (
         <View style={styles.container}>
-            <Animated.View style={[styles.formContainer, { transform: [{ rotateY: rotationY }] }]}>
-                <Animated.View style={{ transform: [{ rotateY: textRotation }] }}>
+            <Animated.View style={[styles.formContainer, {transform: [{rotateY: rotationY}]}]}>
+                <Animated.View style={{transform: [{rotateY: textRotation}]}}>
                     <Text style={styles.title}>
                         {isLogin ? 'Логін' : 'Реєстрація'}
                     </Text>
@@ -163,7 +168,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         elevation: 5,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 5 },
+        shadowOffset: {width: 0, height: 5},
         shadowOpacity: 0.1,
         shadowRadius: 5,
     },

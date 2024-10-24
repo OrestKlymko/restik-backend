@@ -9,6 +9,11 @@ import {
     ScrollView
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import {createBottomTabNavigator} from "@react-navigation/bottom-tabs";
+import ProfileScreen from "../components/ProfileScreen.tsx";
+import MyBookingsScreen from "../components/MyBookingsScreen.tsx";
+import SettingsScreen from "../components/SettingsScreen.tsx";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 export const UserRegistration = () => {
     const [name, setName] = useState('');
@@ -57,56 +62,32 @@ export const UserRegistration = () => {
         console.log('Зареєстровано користувача:', userData);
         Alert.alert('Успішно', 'Реєстрація завершена');
     };
+    const Tab = createBottomTabNavigator();
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.fieldLabel}>Ім'я</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Введіть ваше ім'я"
-                value={name}
-                onChangeText={setName}
-            />
-
-            <Text style={styles.fieldLabel}>Номер телефону</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="+380 (XX) XXX-XX-XX"
-                value={phoneNumber}
-                onChangeText={handlePhoneNumberChange}
-                keyboardType="phone-pad"
-                maxLength={19}
-            />
-
-            <Text style={styles.fieldLabel}>Дата народження</Text>
-            <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShowDatePicker(true)}
-            >
-                <Text>{birthDate ? birthDate.toLocaleDateString() : 'Оберіть дату'}</Text>
-            </TouchableOpacity>
-
-            {showDatePicker && (
-                <DateTimePicker
-                    value={birthDate || new Date()}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
-                />
-            )}
-
-            <Text style={styles.fieldLabel}>Місто</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Введіть ваше місто"
-                value={city}
-                onChangeText={setCity}
-            />
-
-            <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-                <Text style={styles.registerButtonText}>Зареєструватися</Text>
-            </TouchableOpacity>
-        </ScrollView>
+        <Tab.Navigator
+            initialRouteName="Profile"
+            screenOptions={({ route }) => ({
+                tabBarIcon: ({ color, size }) => {
+                    let iconName;
+                    if (route.name === 'Profile') {
+                        iconName = 'person';
+                    } else if (route.name === 'MyBookings') {
+                        iconName = 'book';
+                    } else if (route.name === 'Settings') {
+                        iconName = 'settings';
+                    }
+                    return <Icon name={iconName} size={size} color={color} />;
+                },
+                tabBarActiveTintColor: '#996E4D',
+                tabBarInactiveTintColor: 'gray',
+                headerShown: false,
+            })}
+        >
+            <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Профіль' }} />
+            <Tab.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: 'Мої бронювання' }} />
+            <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Налаштування' }} />
+        </Tab.Navigator>
     );
 };
 

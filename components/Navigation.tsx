@@ -11,7 +11,8 @@ import BenefitsScreen from './screens/BenefitsScreen.tsx';
 import {RestaurantStep} from "./screens/RestaurantStep.tsx";
 import {AddRestaurantDetails} from "./screens/AddRestaurantDetails.tsx";
 import {UserRegistration} from "./screens/UserRegistration.tsx";
-import {RestaurantManagementScreen} from "./screens/RestaurantManagementScreen.tsx"; // Імпорт екрану для додавання ресторану
+import {RestaurantManagementScreen} from "./screens/RestaurantManagementScreen.tsx";
+import {RestaurantDetailScreen} from "./screens/RestaurantDetailScreen.tsx"; // Імпорт екрану для додавання ресторану
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -80,8 +81,10 @@ const Navigation = () => {
                 {/* Екран додавання ресторану (поза табами) */}
                 <Stack.Screen name="Реєстрація закладу" component={RestaurantStep} />
                 <Stack.Screen name="Деталі закладу" component={AddRestaurantDetails}/>
-                <Stack.Screen name="Реєстрація користувача" component={UserRegistration}/>
+                <Stack.Screen name="Мій кабінет" component={UserRegistration}/>
                 <Stack.Screen name="Мої ресторани" component={RestaurantManagementScreen}/>
+                <Stack.Screen name="Керування рестораном" component={RestaurantDetailScreen}/>
+                <Stack.Screen name="Пошук" component={SearchScreen} options={{headerShown:false}}/>
             </Stack.Navigator>
         </NavigationContainer>
     );

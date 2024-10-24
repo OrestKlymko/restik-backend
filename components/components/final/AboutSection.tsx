@@ -1,29 +1,45 @@
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, View, TouchableOpacity, Linking, Alert, Platform, ScrollView, Image} from 'react-native';
+import {
+    StyleSheet, Text, View, TouchableOpacity, Linking, Alert, Platform, ScrollView, Image, Modal, TextInput
+} from 'react-native';
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import ImageView from 'react-native-image-viewing';
-import {RestaurantFinalType} from "../../types/types.ts"; // Для перегляду фото на весь екран
+import {RestaurantFinalType} from "../../types/types.ts";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 interface AboutSectionProps {
     restaurant?: RestaurantFinalType | null,
-    location?: { latitude: number; longitude: number } | null | undefined
+    location?: { latitude: number; longitude: number } | null | undefined,
+    addressId?: number | undefined
 }
 
-export const AboutSection = ({restaurant, location}: AboutSectionProps) => {
+export const AboutSection = ({restaurant, location, addressId}: AboutSectionProps) => {
     const [isImageViewVisible, setImageViewVisible] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [photos, setPhotos] = useState<{ uri: string }[]>([]);
-    const currentTime = new Date();
+    const [reserveModalVisible, setReserveModalVisible] = useState(false);
+    const [guestCount, setGuestCount] = useState('');
+    const [comment, setComment] = useState('');
+    const [reservationDate, setReservationDate] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [reservationTime, setReservationTime] = useState<Date | null>(null);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+    const [token, setToken] = useState<string | null>(null);
 
+    useEffect(() => {
+        AsyncStorage.getItem('token').then(setToken);
+    }, []);
 
+    // Заповнення фото
     useEffect(() => {
         if (restaurant?.imagesRest) {
             setPhotos(restaurant.imagesRest.map(photo => ({uri: photo})));
         }
     }, [restaurant]);
 
-    // Конвертація часу відкриття та закриття у Date об'єкти
     const parseTime = (timeStr: string) => {
         const [hours, minutes] = timeStr.split(':').map(Number);
         const time = new Date();
@@ -33,24 +49,19 @@ export const AboutSection = ({restaurant, location}: AboutSectionProps) => {
 
     const openingTime = restaurant?.openFrom ? parseTime(restaurant.openFrom) : null;
     const closingTime = restaurant?.openTo ? parseTime(restaurant.openTo) : null;
-
-    const isOpen = openingTime && closingTime && currentTime >= openingTime && currentTime <= closingTime;
-
+    const isOpen = openingTime && closingTime && new Date() >= openingTime && new Date() <= closingTime;
 
     const getStatusText = () => {
         if (isOpen) {
-            return `Відчинено до ${closingTime.getHours()}:${closingTime.getMinutes() === 0 ? '00' : closingTime.getMinutes()}`;
+            return `Відчинено до ${closingTime?.getHours()}:${closingTime?.getMinutes() === 0 ? '00' : closingTime?.getMinutes()}`;
         } else {
             return `Зачинено, відкриється о ${openingTime?.getHours()}:${openingTime?.getMinutes() === 0 ? '00' : openingTime?.getMinutes()}`;
         }
     };
 
-
-    // Функція для відкриття карти
     const openMap = () => {
-
         const googleMapsUrl = `comgooglemaps://?daddr=${location?.latitude},${location?.longitude}&directionsmode=driving`;
-        const appleMapsUrl = `maps://?daddr=${location?.latitude},${location?.longitude}&dirflg=d`; // URL для Apple Maps
+        const appleMapsUrl = `maps://?daddr=${location?.latitude},${location?.longitude}&dirflg=d`;
 
         if (Platform.OS === 'ios') {
             Linking.canOpenURL(appleMapsUrl)
@@ -75,7 +86,6 @@ export const AboutSection = ({restaurant, location}: AboutSectionProps) => {
         }
     };
 
-    // Функція для дзвінка
     const makeCall = () => {
         const phoneNumber = `tel:${restaurant?.phoneNumber}`;
         Linking.canOpenURL(phoneNumber)
@@ -86,6 +96,40 @@ export const AboutSection = ({restaurant, location}: AboutSectionProps) => {
                     Alert.alert('Помилка', 'Не вдалося здійснити дзвінок');
                 }
             });
+    };
+
+    // Об'єднання дати та часу в LocalDateTime формат
+    const combineDateAndTime = (date: Date, time: Date) => {
+        const combined = new Date(date);
+        combined.setHours(time.getHours(), time.getMinutes());
+        return combined;
+    };
+
+    const handleReserve = () => {
+        if (!guestCount || !reservationDate || !reservationTime) {
+            Alert.alert('Помилка', 'Будь ласка, заповніть усі поля');
+            return;
+        }
+
+        const reservationDetails = {
+            addressId: addressId, // ID ресторану
+            reservationTime: combineDateAndTime(reservationDate!, reservationTime!), // Поєднання дати та часу
+            guest: parseInt(guestCount),
+            comment
+        };
+        console.log(token)
+        axios.post('http://localhost:8089/api/reservation', reservationDetails, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        })
+            .then(() => {
+                Alert.alert('Успішно', 'Ваша резервація прийнята');
+                setReserveModalVisible(false);
+            }).catch(error => {
+            console.log(error)
+            Alert.alert('Помилка', 'Щось пішло не так');
+        });
     };
 
     return (
@@ -111,24 +155,6 @@ export const AboutSection = ({restaurant, location}: AboutSectionProps) => {
                 onRequestClose={() => setImageViewVisible(false)}
             />
 
-            <View style={styles.featuresContainer}>
-                <View style={styles.featuresList}>
-                    {restaurant?.features.map(feature => (
-                        <View key={feature} style={styles.featureItem}>
-                            <Text style={styles.featureText}>
-                                {feature}
-                            </Text>
-                        </View>
-                    ))}
-                </View>
-            </View>
-
-            {restaurant?.menuLink &&
-                <View><TouchableOpacity onPress={() => Linking.openURL(restaurant?.menuLink)}>
-                    <Text style={styles.menuLink}>Переглянути меню</Text>
-                </TouchableOpacity>
-                </View>}
-
             <View style={styles.infoContainer}>
                 <TouchableOpacity onPress={openMap} style={styles.infoItem}>
                     <View style={styles.iconContainer}>
@@ -152,9 +178,90 @@ export const AboutSection = ({restaurant, location}: AboutSectionProps) => {
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.reserveButton}>
+            <TouchableOpacity
+                style={styles.reserveButton}
+                onPress={() => setReserveModalVisible(true)}
+            >
                 <Text style={styles.reserveButtonText}>Резервувати стіл</Text>
-            </View>
+            </TouchableOpacity>
+
+            {/* Модальне вікно для резервування */}
+            <Modal visible={reserveModalVisible} transparent={true} animationType="slide">
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalTitle}>Резервація столу</Text>
+
+                        <Text style={styles.fieldLabel}>Дата</Text>
+                        <TouchableOpacity
+                            style={styles.input}
+                            onPress={() => setShowDatePicker(true)}
+                        >
+                            <Text>{reservationDate ? reservationDate.toLocaleDateString() : 'Оберіть дату'}</Text>
+                        </TouchableOpacity>
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={reservationDate || new Date()}
+                                mode="date"
+                                display="default"
+                                onChange={(event, selectedDate) => {
+                                    setShowDatePicker(false);
+                                    setReservationDate(selectedDate || reservationDate);
+                                }}
+                            />
+                        )}
+
+                        <Text style={styles.fieldLabel}>Час</Text>
+                        <TouchableOpacity
+                            style={styles.input}
+                            onPress={() => setShowTimePicker(true)}
+                        >
+                            <Text>{reservationTime ? reservationTime.toLocaleTimeString() : 'Оберіть час'}</Text>
+                        </TouchableOpacity>
+                        {showTimePicker && (
+                            <DateTimePicker
+                                value={reservationTime || new Date()}
+                                mode="time"
+                                display="default"
+                                onChange={(event, selectedTime) => {
+                                    setShowTimePicker(false);
+                                    setReservationTime(selectedTime || reservationTime);
+                                }}
+                            />
+                        )}
+
+                        <Text style={styles.fieldLabel}>Кількість гостей</Text>
+                        <TextInput
+                            style={styles.input}
+                            keyboardType="numeric"
+                            placeholder="Введіть кількість гостей"
+                            value={guestCount}
+                            onChangeText={setGuestCount}
+                        />
+
+                        <Text style={styles.fieldLabel}>Коментар</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Додатковий коментар (необов'язково)"
+                            value={comment}
+                            onChangeText={setComment}
+                        />
+
+                        <TouchableOpacity
+                            style={styles.submitButton}
+                            onPress={handleReserve}
+                        >
+                            <Text style={styles.submitButtonText}>Підтвердити резервацію</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={() => setReserveModalVisible(false)}
+                        >
+                            <Text style={styles.cancelButtonText}>Закрити</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -163,21 +270,8 @@ const styles = StyleSheet.create({
     sectionContainer: {
         padding: 16,
     },
-    sectionTitle: {
-        fontFamily: 'PlusJakartaSans-Regular',
-        fontSize: 22,
-        fontWeight: '700',
-        lineHeight: 28,
-        textAlign: 'left',
-        color: '#1C170D',
-        marginBottom: 8,
-    },
     description: {
-        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
-        fontWeight: '400',
-        lineHeight: 24,
-        textAlign: 'left',
         color: '#1C170D',
         marginBottom: 16,
     },
@@ -190,41 +284,9 @@ const styles = StyleSheet.create({
         marginRight: 12,
         borderRadius: 10,
     },
-    featuresContainer: {
-        marginBottom: 16,
-    },
-    featuresList: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-    },
-    featureItem: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderWidth: 1,
-        borderColor: '#1C170D',
-        borderRadius: 10,
-        marginRight: 8,
-        marginBottom: 8,
-        backgroundColor: 'transparent',
-    },
-    featureText: {
-        fontFamily: 'PlusJakartaSans-Regular',
-        fontSize: 16,
-        fontWeight: '400',
-        color: '#996E4D',
-    },
     infoContainer: {
         marginBottom: 16,
     },
-    menuLink: {
-        fontFamily: 'PlusJakartaSans-Regular',
-        fontSize: 16,
-        fontWeight: '400',
-        color: '#A1824A',
-        textDecorationLine: 'underline',
-        marginBottom: 16,
-    },
-
     infoItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -240,28 +302,73 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     infoText: {
-        fontFamily: 'PlusJakartaSans-Regular',
         fontSize: 16,
-        fontWeight: '400',
         color: '#1C170D',
     },
     closedText: {
         color: 'red',
     },
     reserveButton: {
-        width: 358,
-        height: 48,
         backgroundColor: '#009963',
-        borderRadius: 24,
-        justifyContent: 'center',
+        padding: 12,
+        borderRadius: 10,
+        marginBottom: 75,
         alignItems: 'center',
-        alignSelf: 'center',
-        marginBottom: 76,
     },
     reserveButtonText: {
-        fontFamily: 'PlusJakartaSans-Regular',
-        fontSize: 16,
-        fontWeight: '700',
         color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+        width: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 16,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 16,
+    },
+    fieldLabel: {
+        fontSize: 16,
+        marginBottom: 4,
+    },
+    input: {
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 12,
+    },
+    submitButton: {
+        backgroundColor: '#009963',
+        padding: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    submitButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    cancelButton: {
+        backgroundColor: '#FF3B30',
+        padding: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });

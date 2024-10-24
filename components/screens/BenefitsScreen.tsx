@@ -1,135 +1,131 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, TouchableOpacity, FlatList, StyleSheet, Image, Modal} from 'react-native';
-import {BusinessLunch, LastChance, Offer} from "../types/types.ts";
-import Geolocation from "react-native-geolocation-service";
+import {
+    View, Text, TouchableOpacity, FlatList, StyleSheet, Image, Modal, TextInput, Alert
+} from 'react-native';
+import {SwipeListView} from 'react-native-swipe-list-view';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import Geolocation from 'react-native-geolocation-service';
+import {launchImageLibrary} from 'react-native-image-picker';
+import AddOfferModal from "../components/AddOfferModal.tsx";
+import AddLastChanceModal from "../components/AddLastChanceModal.tsx"; // Image picker
+import { format } from 'date-fns';
+import { uk } from 'date-fns/locale';
+import AddBusinessLunchModal from "../components/AddBusinessLunchModal.tsx"; // Українська локалізація
 
-
-const isInTimeRange = (timeRange: string) => {
-    const [start, end] = timeRange.split(' - ').map(t => t.split(':'));
-    const current = new Date();
-    const startTime = new Date(current);
-    startTime.setHours(parseInt(start[0]), parseInt(start[1]), 0);
-    const endTime = new Date(current);
-    endTime.setHours(parseInt(end[0]), parseInt(end[1]), 0);
-    return current >= startTime && current <= endTime;
-};
-
-export default function BenefitsScreen() {
+export default function BenefitsScreen({route, navigation}) {
+    const {restaurantId} = route.params || {};
     const [activeTab, setActiveTab] = useState<'Lunch' | 'Offers' | 'LastChance'>('Lunch');
-    const [selectedItem, setSelectedItem] = useState<any | null>(null); // Обране для модалки
-    const [modalVisible, setModalVisible] = useState(false); // Контроль модалки
-    const [businessLunches, setBusinessLunches] = useState<BusinessLunch[]>([]);
-    const [offers, setOffers] = useState<Offer[]>([]);
-    const [lastChance, setLastChance] = useState<LastChance[]>([]);
-    const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-    // const [showModal, setShowModal] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<any | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [lastChanceModal, setLastChanceModal] = useState(false);
+    const [businessLunchModal,setBusinessLanchModal]=useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
 
+    const [modalAddVisible, setModalAddVisible] = useState(false);
+    const [addType, setAddType] = useState<'Lunch' | 'Offers' | 'LastChance' | null>(null);
+    const [businessLunches, setBusinessLunches] = useState([]);
+    const [offers, setOffers] = useState([]);
+    const [lastChance, setLastChance] = useState([]);
+    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return format(date, "dd MMMM HH:mm", { locale: uk });
+    };
+
+    const handleOpenModal = (item) => {
+        setSelectedItem(item);
+        setShowDetailModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowDetailModal(false);
+    };
 
     useEffect(() => {
         if (!location) {
             getCurrentLocation();
         }
-        if (location) {
-            fetch(`http://localhost:8089/api/special-offers/business-lunch/${location.latitude}/${location.longitude}`)
-                .then(response => response.json())
-                .then(data => setBusinessLunches(data));
-
-            fetch(`http://localhost:8089/api/special-offers/${location.latitude}/${location.longitude}`)
-                .then(response => response.json())
-                .then(data => setOffers(data));
-
-            fetch(`http://localhost:8089/api/special-offers/last-chance/${location.latitude}/${location.longitude}`)
-                .then(response => response.json())
-                .then(data => setLastChance(data));
+        if (restaurantId) {
+            fetchSpecialOffers(restaurantId);
+        } else if (location) {
+            fetchSpecialOffersByLocation(location);
         }
-    }, [location]);
-
+    }, [location, restaurantId]);
 
     const getCurrentLocation = () => {
         Geolocation.getCurrentPosition(
             (position) => {
                 const {latitude, longitude} = position.coords;
                 setLocation({latitude, longitude});
-                console.log('User location:', latitude, longitude);
             },
             (error) => {
                 console.log('Geolocation error', error);
-                // setShowModal(true);
             },
             {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
         );
     };
 
-    const renderBusinessLunchCard = ({item}: { item: any }) => {
-        const isActive = isInTimeRange(item.time);
-
-        return (
-            <TouchableOpacity
-                style={styles.card}
-                onPress={() => {
-                    setSelectedItem(item);
-                    setModalVisible(true); // Відкриваємо модальне вікно
-                }}
-            >
-                <View style={styles.imageBlock}>
-                    <Image source={{uri: item.imageUrl}} style={styles.image}/>
-                </View>
-                <View style={styles.cardContent}>
-                    <Text style={styles.lunchName}>{item.lunchName}</Text>
-                    <Text style={styles.restaurantName}>{item.restaurantName}</Text>
-                    <Text style={styles.restaurantName}>{item.price} грн.</Text>
-                    <Text style={[styles.time, isActive ? styles.timeActive : styles.timeInactive]}>
-                        {item.time}
-                    </Text>
-                </View>
-            </TouchableOpacity>
-        );
+    const fetchSpecialOffers = (restaurantId) => {
+        let businessLunchUrl = `http://localhost:8089/api/special-offers/business-lunch/${restaurantId}`;
+        let offersUrl = `http://localhost:8089/api/special-offers/${restaurantId}`;
+        let lastChanceUrl = `http://localhost:8089/api/special-offers/last-chance/${restaurantId}`;
+        fetch(businessLunchUrl).then(response => response.json()).then(data => setBusinessLunches(data));
+        fetch(offersUrl).then(response => response.json()).then(data => {
+            setOffers(data)
+        });
+        fetch(lastChanceUrl).then(response => response.json()).then(data => setLastChance(data));
     };
 
-    const renderOfferCard = ({item}: { item: any }) => {
-        const isActive = item.happyHours ? isInTimeRange(item.happyHours) : true;
+    const fetchSpecialOffersByLocation = (location) => {
+        let businessLunchUrl = `http://localhost:8089/api/special-offers/business-lunch/${location.longitude}/${location.latitude}`;
+        let offersUrl = `http://localhost:8089/api/special-offers/${location.longitude}/${location.latitude}`;
+        let lastChanceUrl = `http://localhost:8089/api/special-offers/last-chance/${location.longitude}/${location.latitude}`;
 
-        return (
-            <TouchableOpacity
-                style={styles.card}
-                onPress={() => {
-                    setSelectedItem(item);
-                    setModalVisible(true); // Відкриваємо модальне вікно
-                }}
-            >
-                <Image source={{uri: item.imageUrl}} style={styles.image}/>
-                <View style={styles.cardContent}>
-                    <Text style={styles.lunchName}>{item.offerName}</Text>
-                    <Text style={styles.restaurantName}>{item.restaurantName}</Text>
-                    <Text style={[styles.time, isActive ? styles.timeActive : styles.timeInactive]}>
-                        {item.happyHours || `Діє до: ${item.validUntil}`}
-                    </Text>
-                </View>
-            </TouchableOpacity>
-        );
+        fetch(businessLunchUrl).then(response => response.json()).then(data =>{
+            setBusinessLunches(data)});
+
+        fetch(offersUrl).then(response => response.json()).then(data => {
+            setOffers(data)
+        });
+        fetch(lastChanceUrl).then(response => response.json()).then(data => setLastChance(data));
     };
 
-    const renderLastChanceCard = ({item}: { item: any }) => (
-        <TouchableOpacity
-            style={styles.card}
-            onPress={() => {
-                setSelectedItem(item);
-                setModalVisible(true); // Відкриваємо модальне вікно
-            }}
-        >
-            <Image source={{uri: item.imageUrl}} style={styles.image}/>
-            <View style={styles.cardContent}>
-                <Text style={styles.lunchName}>{item.productName}</Text>
-                <Text style={styles.restaurantName}>{item.restaurantName}</Text>
-                <Text style={styles.oldPrice}>Ціна: {item.oldPrice} грн</Text>
-                <Text style={styles.newPrice}>Ціна до {item.validUntil} - {item.newPrice} грн</Text>
-            </View>
-        </TouchableOpacity>
+    const handleDelete = (id: number) => {
+        const deleteUrl = `http://localhost:8089/api/special-offers/${id}`;
+        fetch(deleteUrl, {method: 'DELETE'})
+            .then(() => {
+                if (activeTab === 'Lunch') {
+                    setBusinessLunches(prev => prev.filter(item => item.id !== id));
+                } else if (activeTab === 'Offers') {
+                    setOffers(prev => prev.filter(item => item.id !== id));
+                } else if (activeTab === 'LastChance') {
+                    setLastChance(prev => prev.filter(item => item.id !== id));
+                }
+            })
+            .catch(error => {
+                console.log('Error deleting item:', error);
+            });
+    };
+
+    const renderHiddenItem = (data, rowMap) => (
+        <View style={styles.rowBack}>
+            {restaurantId && (
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(data.item.id)}
+                >
+                    <Text style={styles.deleteButtonText}>Видалити</Text>
+                </TouchableOpacity>
+            )}
+        </View>
     );
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Кращі пропозиції</Text>
+            {!restaurantId && <Text style={styles.title}>Кращі пропозиції</Text>}
             <View style={styles.tabContainer}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'Lunch' && styles.activeTab]}
@@ -155,57 +151,120 @@ export default function BenefitsScreen() {
             </View>
 
             {activeTab === 'Lunch' && (
-                <FlatList
+                <SwipeListView
                     data={businessLunches}
-                    renderItem={renderBusinessLunchCard}
+                    renderItem={({item}) => (
+                        <TouchableOpacity
+                            style={styles.card}
+                            onPress={() => handleOpenModal(item)}
+                        >
+                            <Image source={{uri: item.imageUrl}} style={styles.image}/>
+                            <View style={styles.cardContent}>
+                                <Text style={styles.lunchName}>{item.title}</Text>
+                                <Text style={styles.restaurantName}>{item.restaurant}</Text>
+                                <Text style={styles.restaurantName}>{item.price} грн.</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.listContent}
+                    renderHiddenItem={renderHiddenItem}
+                    rightOpenValue={-75}
+                    disableLeftSwipe={!!restaurantId}
+                    disableRightSwipe
                 />
             )}
 
             {activeTab === 'Offers' && (
-                <FlatList
+                <SwipeListView
                     data={offers}
-                    renderItem={renderOfferCard}
+                    renderItem={({item}) => (
+                        <TouchableOpacity
+                            style={styles.card}
+                            onPress={() => handleOpenModal(item)}
+                        >
+                            <Image source={{uri: item.imageUrl}} style={styles.image}/>
+                            <View style={styles.cardContent}>
+                                <Text style={styles.lunchName}>{item.title}</Text>
+                                <Text style={styles.restaurantName}>{item.restaurant}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.listContent}
+                    renderHiddenItem={renderHiddenItem}
+                    rightOpenValue={-75}
+                    disableRightSwipe
+                    disableLeftSwipe={!restaurantId}
                 />
             )}
 
             {activeTab === 'LastChance' && (
-                <FlatList
+                <SwipeListView
                     data={lastChance}
-                    renderItem={renderLastChanceCard}
+                    renderItem={({item}) => (
+                        <TouchableOpacity
+                            style={styles.card}
+                            onPress={() => handleOpenModal(item)}
+                        >
+                            <Image source={{uri: item.imageUrl}} style={styles.image}/>
+                            <View style={styles.cardContent}>
+                                <Text style={styles.lunchName}>{item.title}</Text>
+                                <Text style={styles.restaurantName}>{item.restaurant}</Text>
+                                <Text style={styles.oldPrice}>Ціна: {item.oldPrice} грн.</Text>
+                                <Text style={styles.dateNew}>Діє до: {formatDate(item.timeTo)}</Text>
+                                <Text style={styles.newPrice}>{item.price} грн.</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.listContent}
+                    renderHiddenItem={renderHiddenItem}
+                    rightOpenValue={-75}
+                    disableRightSwipe
                 />
             )}
 
-            {/* Модальне вікно */}
+            {restaurantId && (
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => setModalAddVisible(true)}
+                >
+                    <Icon name="add" size={30} color="#fff"/>
+                </TouchableOpacity>
+            )}
+
+            {/* Детальна модалка */}
             {selectedItem && (
-                <Modal visible={modalVisible} transparent={true} animationType="fade">
+                <Modal visible={showDetailModal} transparent={true} animationType="slide">
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
-                            <Image source={{uri: selectedItem.imageUrl}} style={styles.modalImage}/>
-                            <Text
-                                style={styles.modalTitle}>{selectedItem.lunchName || selectedItem.offerName || selectedItem.productName}</Text>
+                            <Text style={styles.modalTitle}>{selectedItem.title}</Text>
                             <Text style={styles.modalDescription}>{selectedItem.description}</Text>
-                            {(selectedItem.price || selectedItem.newPrice) && (
-                                <Text
-                                    style={styles.modalPrice}>Ціна: {selectedItem.price || selectedItem.newPrice} грн</Text>)
-                            }
-                            <View style={styles.buttonModal}>
+                            <View style={styles.buttonContainer}>
                                 <TouchableOpacity
                                     style={styles.showRestaurantButton}
-                                    onPress={() => setModalVisible(false)} // Закриваємо модальне вікно
+                                    onPress={() => {
+                                        if (!restaurantId) {
+                                            // Якщо restaurantId відсутній, переходимо на SearchScreen
+                                            navigation.navigate('Пошук', {
+                                                chosenRestaurant: selectedItem.addressId, // Передаємо обраний ресторан
+                                            });
+                                            setModalVisible(false);
+                                            setShowDetailModal(false);
+                                            setSelectedItem(null)
+                                        } else {
+                                            setModalVisible(false);
+                                            setShowDetailModal(false);
+                                            setSelectedItem(null)
+                                        }
+                                    }}
+
                                 >
-                                    <Text style={styles.showRestaurantText}>Показати заклад</Text>
+                                    <Text style={styles.showRestaurantText}>Показати ресторан</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={styles.showRestaurantButton}
-                                    onPress={() => setModalVisible(false)} // Закриваємо модальне вікно
+                                    style={styles.cancelButton}
+                                    onPress={handleCloseModal}
                                 >
-                                    <Text style={styles.showRestaurantText}>Закрити</Text>
+                                    <Text style={styles.cancelButtonText}>Закрити</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -249,9 +308,6 @@ const styles = StyleSheet.create({
     activeTabText: {
         color: '#A1824A',
     },
-    listContent: {
-        paddingHorizontal: 16,
-    },
     card: {
         flexDirection: 'row',
         backgroundColor: '#fff',
@@ -264,10 +320,6 @@ const styles = StyleSheet.create({
         elevation: 3,
         padding: 16,
     },
-    imageBlock: {
-        flexDirection: 'column',
-        alignItems: 'center',
-    },
     image: {
         width: 100,
         height: 100,
@@ -277,32 +329,15 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 16,
     },
-    restaurantName: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#A1824A',
-        marginTop: 4,
-        marginBottom: 4,
-    },
     lunchName: {
         fontSize: 18,
         fontWeight: '700',
         color: '#1C170D',
     },
-    time: {
+    restaurantName: {
         fontSize: 14,
-        marginTop: 4,
-    },
-    timeActive: {
-        color: '#008000', // зелений, якщо активний
-    },
-    timeInactive: {
-        color: '#ff0000', // червоний, якщо не активний
-    },
-    description: {
-        fontSize: 14,
-        color: '#333',
-        marginTop: 8,
+        fontWeight: '500',
+        color: '#A1824A',
     },
     oldPrice: {
         fontSize: 14,
@@ -314,20 +349,34 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#008000',
     },
+    dateNew: {
+        fontSize: 14,
+        marginTop: 5,
+        marginBottom: 5,
+        fontWeight: '400',
+        color: '#000',
+    },
     showRestaurantButton: {
-        backgroundColor: '#A1824A',
+        backgroundColor: '#000',
         padding: 10,
         borderRadius: 10,
         marginTop: 20,
         alignItems: 'center',
-    },
-
-    buttonModal: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '80%',
+        marginRight: 10,
+        flex: 1,
     },
     showRestaurantText: {
+        color: '#fff',
+        fontWeight: '600',
+    },
+    cancelButton: {
+        backgroundColor: '#FF3B30',
+        padding: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+        flex: 1,
+    },
+    cancelButtonText: {
         color: '#fff',
         fontWeight: '600',
     },
@@ -343,12 +392,6 @@ const styles = StyleSheet.create({
         padding: 20,
         alignItems: 'center',
     },
-    modalImage: {
-        width: 200,
-        height: 150,
-        borderRadius: 10,
-        marginBottom: 10,
-    },
     modalTitle: {
         fontSize: 18,
         fontWeight: '700',
@@ -357,12 +400,19 @@ const styles = StyleSheet.create({
     },
     modalDescription: {
         fontSize: 16,
-        color: '#333',
         marginBottom: 10,
     },
     modalPrice: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
-        color: '#A1824A',
+        color: '#008000',
+        marginBottom: 10,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        marginTop: 20,
+        width: '100%',
+        justifyContent: 'space-between',
     },
 });
+

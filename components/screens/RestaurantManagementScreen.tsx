@@ -47,7 +47,7 @@ export const RestaurantManagementScreen = ({navigation}: any) => {
             style={styles.restaurantCard}
             onPress={() => {
                 // Navigation to restaurant details (or any other screen)
-                navigation.navigate('Деталі закладу', {restaurantId: item.id});
+                navigation.navigate('Керування рестораном', {restaurantId: item.id});
             }}
         >
             <Image source={{uri: item.imageUrl}} style={styles.restaurantImage}/>

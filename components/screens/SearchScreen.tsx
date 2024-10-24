@@ -34,7 +34,7 @@ const typeToIcon: Record<string, string> = {
     'Суші бар': 'utensils',
 };
 
-export default function SearchScreen() {
+export default function SearchScreen({route}) {
     const [searchQuery, setSearchQuery] = useState('');
     const [restaurants, setRestaurants] = useState<Restaurant[]>();
     const [location, setLocation] = useState<{ latitude: number, longitude: number } | null>(null);
@@ -56,7 +56,14 @@ export default function SearchScreen() {
         restaurantTypes: [],
         features: []
     });
-
+    useEffect(() => {
+        if (route.params?.chosenRestaurant) {
+            var filter1 = restaurants?.filter(rest => rest.addressId === route.params?.chosenRestaurant);
+            if (filter1 !== undefined) {
+                setChosenRestaurant(filter1[0]);
+            }
+        }
+    }, [route.params?.chosenRestaurant]);
     useEffect(() => {
         requestLocationPermission();
     }, []);
@@ -437,7 +444,7 @@ const styles = StyleSheet.create({
 
     listOfSrollView: {
         paddingTop: 35,
-        marginBottom:105
+        marginBottom: 105
     },
 
     listOfSrollViewOnAdvert: {
